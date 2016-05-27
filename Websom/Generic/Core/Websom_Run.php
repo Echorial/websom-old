@@ -5,8 +5,12 @@ $docChars = str_split($docRoot);
 if ($docChars[count($docChars)-1] == '/'){
 	$docRoot = substr($docRoot, 0, count($docChars)-1);
 }
-define("Websom_root", $docRoot.'/Websom');
+
 define("Document_root", $docRoot);
+$Websom_Config = parse_ini_file(Document_root."/Config/WebsomSettings.ini");
+
+
+define("Websom_root", $docRoot.'/'.$Websom_Config['Websom_Directory']);
 define("Document_root_local", '/');
 define("Host", 'http://www.'.$_SERVER['HTTP_HOST']);
 define("Website_name", "Websom_Website");
