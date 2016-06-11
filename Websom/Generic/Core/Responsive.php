@@ -19,14 +19,22 @@ function Websom_Check_Responsive () {
 	if ($_POST['responiveid'] > count($Responives) OR $_POST['responiveid'] < 0) return false;
 	$__POST = $_POST;
 	unset($__POST['responiveid']);
-	$Responives[$_POST['responiveid']-1]->response($__POST);
+	
+	$responseData = $Responives[$_POST['responiveid']-1]->response($__POST);
+	$data = ['responsive_321_type' => false];
+	if (is_array($responseData)) {
+		$data = $responseData;
+		$data['responsive_321_type'] = true;
+	}
+	cancel(JSON_encode($data));
 }
+
 
 function Get_Responsive_Scripts() {
 	global $Responives;
 	$scripts = '<script>var responsives = [';
 	foreach ($Responives as $responsive) {
-		$scripts .= 'function (respond) {'.$responsive->javascript().'},';
+		$scripts .= 'function (respond, response) {'.$responsive->javascript().'},';
 	}
 	return rtrim($scripts, ',').'];</script>';
 }

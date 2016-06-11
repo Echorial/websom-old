@@ -1,16 +1,29 @@
 $(document).ready(function() {
 	//Run responive garbage\\ 
 	for (var rep = 0; rep < responsives.length; rep++) {
-		(function(id){responsives[rep](function (msg){
-			msg['responiveid'] = rep;
-			$.ajax({
-				type: "POST",
-				url: window.location.href,
-				data: $.param(msg),
-				success: function(Data){
+		(
+		function(id){
+			var serverResponseCallback = function () {};
+			responsives[rep](
+				function (msg){
+					msg['responiveid'] = rep;
+					$.ajax({
+						type: "POST",
+						url: window.location.href,
+						data: $.param(msg),
+						success: function(data){
+							data = JSON.parse(data);
+							if (data.responsive_321_type == true)
+								serverResponseCallback(data);
+						}
+					});
+				},
+				function (callback) {
+					serverResponseCallback = callback;
 				}
-			});
-		})}(rep));
+			)
+		}
+		(rep));
 	}
 	
 	//This is for when the page refreshes or changes\\ 
