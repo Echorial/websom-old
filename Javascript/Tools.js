@@ -21,14 +21,14 @@ String.prototype.notcontains = function(array){
 	}
 	return false;
 }
-
+/* Danger
 Array.prototype.replace = function(what, value){
 	for(var i = 0; i < this.length; i++){
 		if (this[i] == what){
 			this[i] = value;
 		}
 	}
-}
+}*/
 
 jQuery.fn.extend({
 	hasAttr: function (attr) {
