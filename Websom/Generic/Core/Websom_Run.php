@@ -5,21 +5,109 @@ $docChars = str_split($docRoot);
 if ($docChars[count($docChars)-1] == '/'){
 	$docRoot = substr($docRoot, 0, count($docChars)-1);
 }
+
+
+
+/**
+* \defgroup Globals Globals
+* These globals can be used all throughout websom
+* <hr>
+* Globals:
+* 	- Websom_root: The root working folder of websom.
+* 	- Document_root: The root public folder.
+* 	- Document_root_local: /
+* 	- Host: The complete website url.
+* 	- Website_name: The name of the website.
+* 	- Modules_root: The modules directory.
+*
+*/
+
 define("Websom_root", $docRoot.'/Websom');
 define("Document_root", $docRoot);
 define("Document_root_local", '/');
 define("Host", 'http://www.'.$_SERVER['HTTP_HOST']);
 define("Website_name", "Websom_Website");
+define("Modules_root", Websom_root.'/Website/Modules');
 
+function Websom_Reload_Config() {
+	//Load Websom Config
+	include("Config.php");
+
+	$Websom_Config = Config::Get('Websom',
+	';Websom Config File
+	;Set these to override their value
+	;---------------------------------
+	;Websom_root = SomePath
+	;Document_root = SomePath
+	;Host = http://www.example.com
+
+	;Website Details
+	;---------------
+	Website_name = DefaultName
+	;Version
+	Website_minor = 0
+	Website_major = 0
+
+	;End');
+
+	if (isset($Websom_Config['Document_root'])) {
+		define("Document_root", $Websom_Config['Document_root']);
+	}
+
+	if (isset($Websom_Config['Websom_root'])) {
+		define("Websom_root", $Websom_Config['Websom_root']);
+	}
+
+	if (isset($Websom_Config['Host'])) {
+		define("Host", $Websom_Config['Host']);
+	}
+	
+	return $Websom_Config;
+}
+
+
+class Websom {
+	public static $Config;
+	public static $Modules;
+	public static $Version;
+	
+	public static function Module($name) {
+		if (isset(Websom::$Modules[$name])) return Websom::$Modules[$name];
+		return false;
+	}
+}
+
+Websom::$Config = Websom_Reload_Config();
+Websom::$Version = 1.4;
 //Start session\\ 
 session_start();
 
 //For stopping the page echo\\
 $DoNotRender = false;
+$_IncludeResources = false;
 
-function Cancel($Html = ''){
-	global $DoNotRender;
+
+/**
+* \ingroup PageFunctions
+* This function will, rather than echo the normal page contents echo out the `$Html` param.
+*
+* <div class="warning">If the page is Canceled then the structuring, css and js will not be included. This means no Canceling forms or other js dependant features.</div>
+* 
+* Information:
+* 	- Return: void
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
+function Cancel($Html = '', $keepResources = false){
+	global $DoNotRender, $_IncludeResources;
 	$DoNotRender = $Html;
+	$_IncludeResources = $keepResources;
+}
+
+function IncludeResources() {
+	global $_IncludeResources;
+	return $_IncludeResources;
 }
 
 function Render(){
@@ -27,7 +115,18 @@ function Render(){
 	return $DoNotRender;
 }
 
-//For formating errors\\ 
+/**
+* \ingroup PageFunctions
+* This function will format an error.
+*
+* <div class="warning">If the error is fatal it will display the error and die.</div>
+* 
+* Information:
+* 	- Return: string
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function Error($type, $msg, $fatal = false){
 	$msg = '['.$type.' Error]: '.$msg;
 	
@@ -72,7 +171,18 @@ function CallFunctionArgs($Name, $Args = array()){
 function Wait($time) {
 	sleep($time);
 }
-
+/**
+* \ingroup PageFunctions
+* Use this to send mail.
+*
+* <div class="note">In the future this will notice if the server is in dev mode and rather than send real email, simply add it to a sent mail folder.</div>
+* 
+* Information:
+* 	- Return: void
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function Send_Mail($to, $subject, $body, $extraHeaders = '') {
 $headers = "From: " . $NewsLetter['sender'] . "\r\n";
 $headers .= "Reply-To: ". $NewsLetter['sender'] . "\r\n";
@@ -82,7 +192,26 @@ $headers .= $extraHeaders;
 mail($to, $subject, $body, $headers);
 }
 
+/**
+* \defgroup Event Event
+* Use events to handle, well events.
+* <hr>
+* Global events:
+* 	- ready:  called when most functions/tools are ready to use.
+* 	- modulesLoaded: called when all modules are locked and loaded.
+*/
+
 $onEvents = array();
+/**
+* \ingroup Event
+* This function will register the event hook with the provided event name.
+* 
+* Information:
+* 	- Return: void
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function onEvent($name, callable $callback) {
 	global $onEvents;
 	if (!isset($onEvents[$name])) {
@@ -92,6 +221,16 @@ function onEvent($name, callable $callback) {
 	}
 }
 
+/**
+* \ingroup Event
+* This function will invoke the provided event name.
+* 
+* Information:
+* 	- Return: void
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function callEvent($name, $args = array()) {
 	global $onEvents;
 	if (isset($onEvents[$name]))
@@ -102,6 +241,10 @@ function callEvent($name, $args = array()) {
 
 
 include("Responsive.php");
+
+include("Client.php");
+
+include("Dependency.php");
 
 include('process.php');
 
@@ -114,4 +257,12 @@ include("Websom_Run_Modules.php");
 include("Widget_Run.php");
 
 include("Control_Run.php");
+
+include("Export.php");
+
+callEvent('ready');
+
+/**
+* \defgroup TemplateClasses Template Classes
+*/
 ?>

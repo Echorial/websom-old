@@ -5,7 +5,7 @@ $(document).ready(function() {
 		function(id){
 			var serverResponseCallback = function () {};
 			responsives[rep](
-				function (msg){
+				function (msg, inlineCback = false){
 					msg['responiveid'] = rep;
 					$.ajax({
 						type: "POST",
@@ -14,7 +14,11 @@ $(document).ready(function() {
 						success: function(data){
 							data = JSON.parse(data);
 							if (data.responsive_321_type == true)
-								serverResponseCallback(data);
+								if (inlineCback === false) {
+									serverResponseCallback(data);
+								}else{
+									inlineCback(data);
+								}
 						}
 					});
 				},

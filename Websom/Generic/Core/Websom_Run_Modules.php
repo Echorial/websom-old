@@ -10,7 +10,7 @@ include("Control.php");
 include("View.php");
 
 
-//Create Loaded Moduels\\
+//Create Loaded Modules\\
 $LoadedModules;
 
 //Create Loaded Widgets\\
@@ -86,6 +86,14 @@ foreach ($Modules as $Module) {
 			$LoadedViews[$ModuleName] = array();
 			foreach(CallFunction($ModuleName."_Get_Views") as $ViewName)
 				array_push($LoadedViews[$ModuleName], array($ModuleName, $ViewName));
+		}
+		
+		//Get module information\\
+		if (($module_info = CallFunction($ModuleName."_Info")) !== false){
+			Websom::$Modules[$ModuleName] = [
+				'info' => $module_info,
+				'status' => $LoadedModules[$ModuleName]
+			];
 		}
 	}
 }
@@ -198,5 +206,57 @@ function Display_Views(){
 	echo rtrim($e, ", ");
 }
 
+
+//New module loading code\\ 
+function Reload_Modules() {
+	$msgs = '';
+	
+	function StructureColumns($a=array()){
+		$r = '';
+		if (gettype($a) == 'array') {
+			foreach($a as $v){
+				$r .= ', '.$v;
+			}
+		}else{
+			return ', '.$a;
+		}
+		return $r;
+	}
+	
+	$Wbsm_Modules = new DirectoryIterator(Websom_root."/Website/Modules");
+
+	foreach ($Wbsm_Modules as $mod) {
+		if (!$mod->isDot()) {
+			$ModuleName = basename($mod->getFilename(), ".php");
+			//Start loading module\\ 
+			$finder = new Data_Finder();
+			$finder->where('', 'module', '=', $ModuleName);
+			$Id = Data_Select("websom_reference", $finder);
+			if (count($Id) == 0) {
+				$builder = new Data_Builder();
+				$builder->add('module', $ModuleName);
+				$Id = Data_Insert("websom_reference", $builder);
+			}else{
+				$Id = $Id[0]['id'];
+			}
+			
+			$tbls = CallFunction($ModuleName."_Structure");
+			if (!is_array_associative($tbls) AND $tbls !== false) {
+				return 'Module '.$ModuleName.' is not cooperating. \n';
+			}
+			if ($tbls === false) {
+				$msgs .= '[Loaded '.$ModuleName.'] \n';
+				continue;
+			}
+			foreach ($tbls as $tableName => $tableColumns){
+				Structure_Create("m".$Id.'_'.$tableName, "`id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`) ".StructureColumns($tableColumns));
+				$msgs .= '\n Loaded '.$ModuleName.'.'.$tableName;
+			}
+			$msgs .= '\n [Loaded '.$ModuleName.']\n';
+		}
+	}
+	
+	return $msgs;
+}
 
 ?>
