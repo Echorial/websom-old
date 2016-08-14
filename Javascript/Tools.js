@@ -39,6 +39,10 @@ jQuery.fn.extend({
 	}
 });
 
+function isset(v) {
+	return (typeof v === 'undefined' || v === null) ? false : true;
+}
+
 function setCookie(cname, cvalue, exper) {
     var d = new Date();
     d.setTime(d.getTime() + (exper));

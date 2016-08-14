@@ -10,7 +10,7 @@ $Page = '';
 
 $Page = file_get_contents(Websom_root."/Website/Page/".$Properties['TemplatePage'], true);
 
-$Properties['Input'] = Get_Input_Scripts().Get_Responsive_Scripts();
+$Properties['Input'] = Get_Client_Scripts().Get_Input_Scripts().Get_Responsive_Scripts();
 
 
 preg_match_all("~%(.*?)%~", $Page, $Propertie);
@@ -41,6 +41,8 @@ $Render = Render();
 if ($Render === false){
 	echo $Page;
 }else{
+	$resources = IncludeResources();
+	if ($resources !== false) $Render = '<!DOCTYPE html><html><head>'.$Properties['Css'].$Properties['Javascript'].$Properties['Input'].'</head>'.'<body>'.$Render.'</body></html>';
 	echo $Render;
 }
 ?>

@@ -1,30 +1,35 @@
 <?php
-//Object module/manager is the core of websom\\
+/**
+* \defgroup Data Data tools
+* These tools provide a very quick and easy way to create great database viewing and manipulation thats responsive and fast.
+*/
 
-//Set the appropriate config variables up\\
+//Object module/manager is the core of websom
 
-$Config;
+//Set the appropriate config variables up
+
+$Object_Config;
 $Connection;
 
-//Make sure object has all config files needed\\
-//This is called by websom to include the needed files\\
+//Make sure object has all config files needed
+//This is called by websom to include the needed files
 function Object_Config_Send () {
 
-	//Websom will search for the config file in the Config folder located at the root directory\\
+	//Websom will search for the config file in the Config folder located at the root directory
 	return array("MySqlCredentials");
 }
-//This is called by websom to give the config data to the module\\
+//This is called by websom to give the config data to the module
 function Object_Config_Get ($Configs) {
-	//The [$Configs] is an array of config data\\
-	//Since we only asked for one config file we will store it in the [$Config]\\
-	global $Config;
-	$Config = $Configs[0]['MySqlCredentials'];
+	//The [$Configs] is an array of config data
+	//Since we only asked for one config file we will store it in the [$Config]
+	global $Object_Config;
+	$Object_Config = $Configs[0]['MySqlCredentials'];
 }
-//This is called by websom if a config file failed to load\\
+//This is called by websom if a config file failed to load
 function Object_Config_Fail ($Config) {
-//[$Config] will be the file that failed to load\\
+//[$Config] will be the file that failed to load
 
-//If you return true websom will continue loading the page. But if you return a String websom will create the config ini file with the string in it\\
+//If you return true websom will continue loading the page. But if you return a String websom will create the config ini file with the string in it
 return '
 Server_Name = "localhost"
 
@@ -46,9 +51,9 @@ Remove_Password = "websom"
 Database_Name = "websom"
 ';
 }
-//Websom calls this at the start, asking for a status of true/false\\ For instance this will check if it is able to connect to a database then it will return true, if it is unable it will return false
+//Websom calls this at the start, asking for a status of true/false. For instance this will check if it is able to connect to a database then it will return true, if it is unable it will return false
 function Object_Status(){
-	global $Config;
+	global $Object_Config;
 	global $Connection;
 	$Rtn = true;
 	$Connection['Select'] = '';
@@ -56,9 +61,9 @@ function Object_Status(){
 	$Connection['Update'] = '';
 	$Connection['Structure'] = '';
 	$Connection['Remove'] = '';	
-	//Check connection\\
+	//Check connection
 	foreach ($Connection as $Name => $ConnetionTry){
-		$ConnectionTry = new mysqli($Config['Server_Name'], $Config[$Name.'_Username'], $Config[$Name.'_Password'], $Config['Database_Name']);
+		$ConnectionTry = new mysqli($Object_Config['Server_Name'], $Object_Config[$Name.'_Username'], $Object_Config[$Name.'_Password'], $Object_Config['Database_Name']);
 		if ($ConnectionTry->connect_error) {
 			$Rtn = false;
 		}
@@ -68,12 +73,44 @@ function Object_Status(){
 	return $Rtn;
 }
 
-//Websom calls this asking for the storage structure (in sql)\\
+
+
+
+
+//Websom calls this asking for the storage structure (in sql)
 function Object_Structure () {
-	return false;
+	return [
+		'Storage' => '`skey` VARCHAR(256) NOT NULL , `sstorage` TEXT NOT NULL'
+	];
 }
 
+
+/**
+* \ingroup Data
+* This class is used to search and find data quickly as well as safely.
+* <br>
+* Example usage:
+*
+* \code
+* $finder = new Data_Finder(); //Create a new finder
+* $finder->where("", "id", "=", 20);  //Add a where query to the finder
+* 
+* $found = Data_Select(GetTable("myModule.myTable"), $finder); //Search the myTable table for a row that has an id = 20
+*
+* echo $found[0]['name']; //echo out the first results name
+*
+* \endcode
+*
+* Information:
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 class Data_Finder {	//TODO: Make the history and query generate at getPrepared rather than durring the where, between, order
+	/**
+	* The $all option will determine whether or not to find all rows.<br>
+	* The $columns option will determine what columns are selected.
+	*/
 	public function __construct($all = false, $_columns = '*') {
 		if ($all) $this->query = 'WHERE 1';
 		$this->columns = $_columns;
@@ -89,6 +126,22 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 	
 	private $wrapa = false;
 	
+	/**
+	* This function will add a where query to the finder.
+	* 
+	* Params:
+	* 	- $separator: Use this when mixing statements together. For instance $finder->where("AND", "anotherColumn", "=", "both")
+	* 	- $columnName: Name of column for the where statement.
+	* 	- $operator: The logical operator or statement used in the where statement.
+	* 	- $columnValue: The value to check for.
+	* 	- $keepValueInQuery: If the finder should just insert the value into the query or if it should use SQL Injection protection and use the value literaly.
+	*
+	* Information:
+	* 	- Return: boolean
+	* 	- Author: Echorial
+	* 	- Date: Unkown
+	* 	- Version: 1.0
+	*/
 	public function where($separator, $columnName, $operator, $columnValue, $keepValueInQuery = false) {
 		array_push($this->_whereHistory, array($separator, $columnName, $operator, $columnValue, $keepValueInQuery));
 		if (strpos($this->query, 'WHERE') === false) $this->query .= ' WHERE ';
@@ -113,6 +166,15 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 		return true;
 	}
 	
+	/**
+	* This function will check if the column value is BETWEEN the two given values `$cv1`, `$cv2`.
+	*
+	* Information:
+	* 	- Return: void
+	* 	- Author: Echorial
+	* 	- Date: Unkown
+	* 	- Version: 1.0
+	*/
 	public function between($separator, $columnName, $cv1, $cv2) {
 		array_push($this->_betweenHistory, array($separator, $columnName, $cv1, $cv2));
 		if (strpos($this->query, 'WHERE') === false) $this->query .= ' WHERE ';
@@ -133,16 +195,52 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 		array_push($this->values, $cv2);
 	}
 	
+	/**
+	* How to order the results.
+	*
+	* <div class="warning">This does not use prepared statements, so make sure the input is safe.</div>
+	*
+	* Information:
+	* 	- Return: void
+	* 	- Author: Echorial
+	* 	- Date: Unkown
+	* 	- Version: 1.0
+	*/
 	public function order($column, $o) {
 		array_push($this->_orderHistory, array($column, $o));
 		$this->query .= ' ORDER BY `'.$column.'` '.$o.' ';
 	}
 	
+	/**
+	* What column to group by.
+	*
+	* <div class="warning">This does not use prepared statements, so make sure the input is safe.</div>
+	*
+	* Information:
+	* 	- Return: void
+	* 	- Author: Echorial
+	* 	- Date: Unkown
+	* 	- Version: 1.0
+	*/
 	public function group($column) {
 		array_push($this->_groupHistory, array($column));
 		$this->query .= ' GROUP BY '.$column.' ';
 	}
 	
+	/**
+	* This will start and stop `(` and `)`.<br>
+	* Example:
+	* \code
+	* $finder->wrap();
+	* $finder->where("", "ok", "=", "no");
+	* $finder->wrap(); //The query now looks like this: (`ok` = ?)
+	* \endcode
+	* Information:
+	* 	- Return: void
+	* 	- Author: Echorial
+	* 	- Date: Unkown
+	* 	- Version: 1.0
+	*/
 	public function wrap($separator = null) {
 		$this->query .= ($this->wrapa) ? ') ' : $separator.' (';
 		$this->wrapa = !$this->wrapa;
@@ -154,6 +252,18 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 		}
 		return array(array_merge(array($this->types), $this->values), $this->query);
 	}
+	
+	/**
+	* This will merge two finders together.
+	* <div class="note">A new version of finder will be more stable with wrap and other statements.</div>
+	* <div class="warning">This will not merge any wraped statements.</div>
+	*
+	* Information:
+	* 	- Return: void
+	* 	- Author: Echorial
+	* 	- Date: Unkown
+	* 	- Version: 1.0
+	*/
 	public function merge($otherFinder) {
 		foreach ($otherFinder->_whereHistory as $where)
 			$this->where($where[0], $where[1], $where[2], $where[3], $where[4]);
@@ -166,6 +276,25 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 	}
 }
 
+/**
+* \ingroup Data
+*
+* This will create a finder. This is nice for quick inline finding.
+* Example usage:
+* \code
+* $finder = Quick_Find(
+* 	[
+*		["column", "=", "value"],
+*		["anotherColumn", "=", "anotherValue"]
+*	]
+* );
+* \endcode
+* Information:
+* 	- Return: Data_Finder
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function Quick_Find($findsArray){
 	$return = new Data_Finder();
 	foreach($findsArray as $i => $a)
@@ -177,9 +306,35 @@ function Quick_Find($findsArray){
 
 */
 
+/**
+* \ingroup Data
+*
+* The Data_Builder is used for building lists of column value pairs, to be inserted or updated in a MySql database.
+*
+* Example usage:
+* \code
+* $builder = new Data_Builder();
+* $builder->add("name", "John Smith");
+* $builder->add("age", 32);
+* $rowId = Data_Insert(GetTable("Names.people"), $builder); //Inserts a new row with the `name` = `John Smith` and the `age` = `32`
+* \endcode
+*
+* Information:
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 class Data_Builder {
 	public $types = '';
 	public $values = array();
+	/**
+	* This will add the column, value pair to the builder.
+	*
+	* Information:
+	* 	- Author: Echorial
+	* 	- Date: Unkown
+	* 	- Version: 1.0
+	*/
 	public function add($columnName, $columnValue) {
 		$type = '';
 		$types['string'] = 's';
@@ -222,6 +377,17 @@ class Data_Builder {
 	}
 }
 
+/**
+* \ingroup Data
+*
+* This will select data from the `$table` and search using the `$finder`.
+*
+* Information:
+* 	- Return: Array
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function Data_Select ($table, $finder, $selects = '*') {
 	global $Connection;
 
@@ -284,6 +450,17 @@ function Data_Select($TableName, $WhereArray, $WhereArrayValues, $ExtraQuery="")
 	return $Return;
 }*/
 
+/**
+* \ingroup Data
+*
+* This will insert the `$builder` into the `$tableName`.
+*
+* Information:
+* 	- Return: int(id of the inserted row)
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function Data_Insert($tableName, $builder) {
 	global $Connection;
 	$insert = $builder->getPrepared();
@@ -304,6 +481,16 @@ function Data_Insert($tableName, $builder) {
 	return  $Connection['Insert']->insert_id;
 }
 
+/**
+* \ingroup Data
+*
+* This will delete the found row(s) in the `$tableName`.
+*
+* Information:
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function Data_Delete($tableName, $finder) {
 	global $Connection;
 	$delete = $finder->getPrepared();
@@ -347,6 +534,17 @@ function Data_Insert($TableName, $InsertArray, $InsertArrayValues){
 	return $Connection['Insert']->insert_id;
 }*/
 
+/**
+* \ingroup Data
+*
+* This will update the found row(s) with the `$builder` in the `$tableName`.
+*
+* Information:
+* 	- Return: boolean
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function Data_Update($tableName, $builder, $finder) {
 	global $Connection;
 	
@@ -404,6 +602,17 @@ function Data_Update($TableName, $UpdateArray, $UpdateArrayValues, $ExtraQuery="
 	return true;
 }*/
 
+/**
+* \ingroup Data
+*
+* This will return true or false depending on whether or not it found and rows.
+*
+* Information:
+* 	- Return: boolean
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function Data_Find($tableName, $finder){
 	$found = Data_Select($tableName, $finder);
 	
@@ -418,6 +627,18 @@ function Data_Find($tableName, $finder){
 	}
 }
 
+/**
+* \ingroup Data
+*
+* This will create the the table in the Websom database with the given columns.
+*
+* <div class="warning">Do not use this. If you need tables use the module structure.</div>
+*
+* Information:
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function Structure_Create($TableName, $Columns){
 	global $Connection;
 
@@ -500,7 +721,7 @@ function Object_End_List_Add () {
 }
 
 function Object_Structure_List($Structure){
-	//Very useful\\
+	//Very useful
 	return $Structure;
 }
 
@@ -544,7 +765,7 @@ function Object_Get_Input() {
 			}
 		}
 		
-		//Set up values into Post like array\\
+		//Set up values into Post like array
 		foreach($StructuredValues as $Name => $Properties){
 			if ($Properties['type'] == 'list'){
 				
@@ -576,6 +797,22 @@ function Object_Get_Input() {
 	return $Values;
 }
 
+/**
+* \ingroup Data
+*
+* This will return the real table for the ModuleName.ModuleTable pair.
+* 
+* Example:
+* \code
+* $realTable = GetTable("MyModule.moduleTable"); //May return something like "m6_moduleTable"
+* \endcode
+*
+* Information:
+* 	- Return: string
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function GetTable($mod) {
 	$mod = explode('.', $mod);
 	if (count($mod) < 2)
@@ -583,12 +820,49 @@ function GetTable($mod) {
 	return GetModuleReference($mod[0]).'_'.$mod[1];
 }
 
+/**
+* \ingroup Data
+*
+* Does the opposite of GetTable().
+*
+* Information:
+*  	- Return: string
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function UnTable($mod) {
 	$mod = explode('_', $mod);
 	return array_search($mod[0], GetModuleReference()).'.'.$mod[1];
 }
 
+/**
+* \ingroup Data
+*
+* Data_Structure's are used by the Data_Output_* and Data_Input_* tools for quick and easy MySql viewing and manipulation.
+*
+* Example usage:
+* \code
+* $ds = new Data_Structure("PersonLogger.people", "Inserted!"); //The second param is the success message
+* $ds->addControl(new PersonLogger_PersonName(), "name"); //Add a control for the column `name`
+* $ds->addControl(new Submit("Add Person")); //Add a button for submiting the form
+* 
+* echo Data_Input_Create($ds); //Now you just created a form that will allow users to add a person to the PersonLogger.people table
+* \endcode
+*
+* Information:
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 class Data_Structure {
+	/**
+	* Params:
+	* 	- `$mod`: The module table path.
+	* 	- `$sMsg`: Success message.
+	* 	- `$_action`: The action that will be called with a success.
+	*
+	*/
 	public function __construct($mod = "", $sMsg = false, $_action = false){
 		$this->table = GetTable($mod);
 		if ($this->table === false) $this->table = $mod;
@@ -604,10 +878,33 @@ class Data_Structure {
 	public $htmlStructure = '';
 	public $sets = array();
 	public $finder;
+	/**
+	*
+	* This will add a control to the data structures list of control, column pairs.<br>
+	* Params:
+	* 	- `$conrol`: The control object to be used.
+	* 	- `$column`: The colum that the control will be associated with. If no value is provided the control will not be associated with a column.
+	* 	- `$columnIsName`: If this is true the `$column` will be a name and the control wont interact with the database.
+	*
+	* Information:
+	* 	- Return: void
+	* 	- Author: Echorial
+	* 	- Date: Unkown
+	* 	- Version: 1.0
+	*/
 	public function addControl ($control, $column = false, $columnIsName = false) {
 		array_push($this->inputs, array($control, $column, $columnIsName));
 	}
 	
+	/**
+	* This will add a column, value pair to the Data_Structure for when the database is changed.
+	*
+	* Information:
+	* 	- Return: void
+	* 	- Author: Echorial
+	* 	- Date: Unkown
+	* 	- Version: 1.0
+	*/
 	public function addSet ($col, $val) {
 		array_push($this->sets, array($col, $val));
 	}
@@ -622,9 +919,43 @@ class Data_Input {
 	
 }
 
-//Easy database data editor tools\\
+/**
+* \ingroup Data
+*
+* This function will return a string containg a form that will when submited create a row in the $dataStructure's table with the $dataStructure's controls
+*
+* Example usage:
+* \code
+* class myModule_Controls_Name extends Control {
+*	function get() {
+*		return ['type' => 'text', 'count' => '5 255', 'placeholder' => 'Name']; //Return a text control with a character min of 5 and max of 255
+* 	}
+* }
+* 
+* $ds = new Data_Structure("myModule.myTable", "Row inserted!!!");
+* $ds->addControl(new myModule_Controls_Name(), "name"); //Adds the custom control
+* $ds->addControl(new Submit("Add row")); //Add an empty control just for submiting the form
+*
+* echo Data_Input_Create($ds);
+*
+* \endcode
+*
+* The form returned should look something like this:
+*
+* <div><form>
+* 	<input type="text" count="5 255" placeholder="name"></input><input type="submit" value="Add row"></input>
+* </form></div>
+*
+* When the form is sumbited a row with the `name` column = to `name control's value` will be inserted.
+*
+* Information:
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
+
 function Data_Input_Create($dataStructure) {
-	//Do generating\\
+	//Do generating
 	$inputId = 0;
 	$output = '';
 	
@@ -632,7 +963,7 @@ function Data_Input_Create($dataStructure) {
 
 	$output .= Data_Controls_Stringify($dataStructure);
 	
-	//Do checking\\
+	//Do checking
 	$userInput = Object_Get_Input();
 
 	if ($userInput !== false){
@@ -665,7 +996,7 @@ function Data_Structure_Cook ($dataStructure, $userInput) {
 	$builder = new Data_Builder();
 	$valArray = array();
 	foreach($userInput as $key => $currentInput) {
-		//Gathering dust\\
+		//Gathering dust
 		/*$bakedInput = explode('^|', $rawInput);
 		foreach ($bakedInput as $listKey => $listValue){
 			$bakedInput[$listKey] = explode('%|', $listValue);
@@ -686,8 +1017,40 @@ function Data_Structure_Cook ($dataStructure, $userInput) {
 	return array($builder, $valArray);
 }
 
+/**
+* \ingroup Data
+*
+* This function will return a string containg a form that will when submited call a function that you can hook into.
+*
+* Example usage:
+* \code
+* class myModule_Controls_Name extends Control {
+*	function get() {
+*		return ['type' => 'text', 'count' => '5 255', 'placeholder' => 'Name']; //Return a text control with a character min of 5 and max of 255
+* 	}
+* }
+* 
+* $ds = new Data_Structure("myModule.myTable", "Submited!!!");
+* $ds->addControl(new myModule_Controls_Name(), "name"); //Adds the custom control
+* $ds->addControl(new Submit("Add row")); //Add an empty control just for submiting the form
+*
+* $ds->onSuccess = function ($values) {
+*	InputSend(InputSuccess('The name submited is '.$values['name']));
+* }
+*
+* echo Data_Input_Plain($ds);
+*
+* \endcode
+*
+* When the form is submited if the input is valid the `onSuccess` callback is fired with the input passed as a param.
+* 
+* Information:
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function Data_Input_Plain($dataStructure) {
-	//Do generating\\
+	//Do generating
 	$inputId = 0;
 	$output = '';
 	
@@ -695,7 +1058,7 @@ function Data_Input_Plain($dataStructure) {
 
 	$output .= Data_Controls_Stringify($dataStructure);
 	
-	//Do checking\\
+	//Do checking
 	$userInput = Object_Get_Input();
 
 	if ($userInput !== false){
@@ -720,9 +1083,44 @@ function Data_Input_Plain($dataStructure) {
 function Data_Input_Create_Start($Data_Structure){
 	
 }
-//Easy database data editor tools\\
+
+//Easy database data editor tools
+/**
+* \ingroup Data
+*
+* This function works much the same as Data_Input_Create(), but rather than create a row it will edit the row given.
+*
+* Example usage:
+* \code
+* class myModule_Controls_Name extends Control {
+*	function get() {
+*		return ['type' => 'text', 'count' => '5 255', 'placeholder' => 'Name']; //Return a text control with a character min of 5 and max of 255
+* 	}
+* }
+* 
+* $ds = new Data_Structure("myModule.myTable", "Row inserted!!!");
+* $ds->addControl(new myModule_Controls_Name(), "name"); //Adds the custom control
+* $ds->addControl(new Submit("Save")); //Add an empty control just for submiting the form
+*
+* echo Data_Input_Edit($ds, 12);
+*
+* \endcode
+*
+* The form returned should look something like this:
+*
+* <div><form>
+* 	<input type="text" count="5 255" placeholder="name"></input><input type="submit" value="Add row"></input>
+* </form></div>
+*
+* When the form is sumbited the row 12 will be updated with the new `name` value.
+*
+* Information:
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function Data_Input_Edit($dataStructure, $rowId, $loadValues = true) {
-	//Do generating\\
+	//Do generating
 	$inputId = 0;
 	$output = '';
 	
@@ -732,7 +1130,7 @@ function Data_Input_Edit($dataStructure, $rowId, $loadValues = true) {
 	$currentData = Data_Select($dataStructure->table, $finder);
 	if (!$loadValues) $currentData = null;
 	$output .= Data_Controls_Stringify($dataStructure, $currentData);
-	//Do checking\\
+	//Do checking
 	$userInput = Object_Get_Input();
 
 	if ($userInput !== false){
@@ -758,11 +1156,41 @@ function Data_Input_Edit($dataStructure, $rowId, $loadValues = true) {
 	
 	$output .= Object_End_Input();
 	
-	return $output;
-	
-	
+	return $output;	
 }
 
+
+/**
+* \ingroup Data
+*
+* This function will return a html string that allows clients to sort and view information in a MySql table.
+*
+* Example usage:
+* \code
+* class myModule_Views_SideBySide extends View {
+*	function full($rows, $columns) {
+*		return '<div class="clearfix"><div class="col-md-4">'.$columns.'</div><div class="col-md-8">'.$rows.'</div></div>';
+* 	}
+* 	function sub ($row) {
+*		return '<div>Name: '.$row['name'].'</div>';
+* 	}
+* }
+* 
+* $ds = new Data_Structure("myModule.myTable");
+* $ds->addControl(new Search(), "name"); //Adds the search control to allow searching
+* $ds->addControl(new Submit("Search")); //Add an empty control just for submiting the form
+*
+* echo Data_Output_Sort($ds, new myModule_Views_SideBySide());
+*
+* \endcode
+*
+* This will echo out a responsive searchable data viewing area.
+*
+* Information:
+* 	- Author: Echorial
+* 	- Date: Unkown
+* 	- Version: 1.0
+*/
 function Data_Output_Sort($dataStructure, $view, $viewOnCreate = true) {
 	$containerId = ('for'.$dataStructure->table.'21');
 	$controls = Object_Start_Input(base64_encode($dataStructure->table), 'refreshplace="'.$containerId.'"');
@@ -826,7 +1254,7 @@ function Data_Send_Messages($ds) {
 		InputSend(InputSuccess($ds->success));
 }
 
-//This function is a complete mess, it will be fixed soon.\\
+//This function is a complete mess, it will be fixed soon.
 function Data_Controls_Stringify($dataStructure, $values = null) {
 	$rtn = $dataStructure->htmlStructure;
 	$noStruct = ($rtn == '');
@@ -855,7 +1283,7 @@ function Data_Controls_Stringify($dataStructure, $values = null) {
 		if (isset($control['list'])) $OSL .= Object_Start_List($inputId, 'Add', $addbuttonclass, $removebuttonclass);
 		if ($values !== null){
 
-		//FOR: Loading data\\
+		//FOR: Loading data
 
 		$val = $value[0]->load($val);
 			if (isset($control['list'])) {
@@ -893,7 +1321,7 @@ function Data_Controls_Stringify($dataStructure, $values = null) {
 						}
 			}
 		
-		//FOR-END:\\
+		//FOR-END:
 		}
 		
 		if ($okToCreateControl) {
@@ -1034,5 +1462,95 @@ function InputSend($str) {
 	if ($sending !== '') $sending = $sending.',';
 	Cancel('{'.$sending.Get_Actions().'}');
 }
+
+
+//Storage class
+/**
+* \ingroup Data
+*
+* Use this class to store info
+*/
+class Storage {
+	static public function Set($key, $value) {
+		if (strlen($key) > 255) Error('Storage', 'Key cannot be larger than 255 characters', true);
+		$finder = Quick_Find([['skey', '=', $key]]);
+		$tbl = GetTable('Object.Storage');
+		$builder = new Data_Builder();
+		$builder->add('sstorage', json_encode($value));
+		if (Data_Find($tbl, $finder)) {
+			Data_Update($tbl, $builder, $finder);
+		}else{
+			$builder->add('skey', $key);
+			Data_Insert($tbl, $builder);
+		}
+		return true;
+	}
+	
+	static public function Get($key) {
+		if (strlen($key) > 255) Error('Storage', 'Key cannot be larger than 255 characters', true);
+		$finder = Quick_Find([['skey', '=', $key]]);
+		$tbl = GetTable('Object.Storage');
+		$found = Data_Select($tbl, $finder);
+		if (count($found) == 0) return false;
+		return json_decode($found[0]['sstorage']);
+	}
+	
+	static public function Remove($key) {
+		if (strlen($key) > 255) Error('Storage', 'Key cannot be larger than 255 characters', true);
+		$finder = Quick_Find([['skey', '=', $key]]);
+		$tbl = GetTable('Object.Storage');
+		Data_Delete($tbl, $finder);
+		return true;
+	}
+}
+
+function CmdStorageGet() {
+	$cmd = new Console_Command('StorageGet', 'Get value from storage.');
+	$cmd->aliases = ['get'];
+	$cmd->params = [
+		Console_Param('key', 'Key of storage value', 'string')
+	];
+	$cmd->call = function ($params, $flags) {
+		if (strlen($params['key']) > 255) return 'Key is too long. Max characters 255';
+		return Storage::Get($params['key']);
+	};
+	return $cmd;
+}
+
+function CmdStorageRemove() {
+	$cmd = new Console_Command('StorageRemove', 'Remove a value from storage.');
+	$cmd->aliases = ['delete'];
+	$cmd->params = [
+		Console_Param('key', 'Key of storage value', 'string')
+	];
+	$cmd->call = function ($params, $flags) {
+		if (strlen($params['key']) > 255) return 'Key is too long. Max characters 255';
+		Storage::Remove($params['key']);
+		return 'Deleted';
+	};
+	return $cmd;
+}
+
+function CmdStorageSet() {
+	$cmd = new Console_Command('StorageSet', 'Set a value in storage.');
+	$cmd->aliases = ['set'];
+	$cmd->params = [
+		Console_Param('key', 'Key of storage value', 'string'),
+		Console_Param('value', 'Value to set', 'mixed')
+	];
+	$cmd->call = function ($params, $flags) {
+		if (strlen($params['key']) > 255) return 'Key is too long. Max characters 255';
+		$value = $params['value'];
+		Storage::Set($params['key'], $value);
+		return 'Set';
+	};
+	return $cmd;
+}
+
+onEvent('ready', function () {
+	Console_Register(CmdStorageGet());
+	Console_Register(CmdStorageSet());
+	Console_Register(CmdStorageRemove());
+});
 
 ?>
