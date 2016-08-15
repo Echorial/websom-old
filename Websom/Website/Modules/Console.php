@@ -141,6 +141,12 @@ $(document).ready(function () {
 
 class Console_Console extends Widget {
 	function get() {
+		Resources::Register([
+			'register' => 'Console',
+			'path' => 'Css/console.css',
+			'external' => false,
+			'type' => 'stylesheet'
+		]);
 		Responsive_Once(new Console_Console_Responsive());
 		return '<div class="Console_Container"><textarea name="Console" class="Console_Console"></textarea></div>';
 	}
@@ -429,6 +435,7 @@ onEvent("ready", function () {
 	Console_Register(CmdReload());
 	Console_Register(CmdName());
 	Console_Register(CmdInfo());
+	Resources::Remove("Css/console.css");
 });
 
 

@@ -1,6 +1,9 @@
 <?php
 Websom_Check_Responsive();
 
+SetPropertie("Css", Resources::getCss());
+SetPropertie("Javascript", Resources::getJs());
+
 $Properties = GetProperties();
 
 $Properties['Body'] .= ob_get_contents();

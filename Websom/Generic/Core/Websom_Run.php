@@ -242,6 +242,8 @@ function callEvent($name, $args = array()) {
 
 include("Responsive.php");
 
+include("Resource.php");
+
 include("Client.php");
 
 include("Dependency.php");
