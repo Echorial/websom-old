@@ -74,9 +74,18 @@ function Inject($tag, $place, $what) {
 
 include(Websom_root."/Generic/Core/Page_Functions.php");
 
+
+//Old resource including.
+/*
 include(Websom_root."/Generic/Core/Page_Javascript_Loader.php");
 
 include(Websom_root."/Generic/Core/Page_Css_Loader.php");
+*/
+
+//New way located in Resource.php
+
+
+
 
 ob_start();
 ?>
