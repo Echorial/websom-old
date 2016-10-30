@@ -1,14 +1,6 @@
-# Ignore everything:
-*
-!*/
- 
-#ignore php error logs
-errors.log
-php_errors.log
- 
-#ignore the backup 'orig' files produced by kdiff
-*.orig
- 
+/*
+#!/a/**/foo
+
 #ignore thumbnails created by windows
 Thumbs.db
  
