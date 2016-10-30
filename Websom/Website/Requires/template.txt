@@ -1,3 +1,0 @@
-Template require file
-
-Remove this.
