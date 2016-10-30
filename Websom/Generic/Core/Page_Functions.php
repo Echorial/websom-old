@@ -14,7 +14,7 @@
 * 	- Date: Unkown
 * 	- Version: 1.0
 */
-function Go(string $Location){
+function Go($Location){
 	header("Location: ".$Location);
 }
 

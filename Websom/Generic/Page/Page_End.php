@@ -1,8 +1,10 @@
 <?php
+callEvent('end');
+
 Websom_Check_Responsive();
 
 SetPropertie("Css", Resources::getCss());
-SetPropertie("Javascript", Resources::getJs());
+SetPropertie("Javascript", Resources::getJs().Javascript::get());
 
 $Properties = GetProperties();
 
@@ -19,7 +21,12 @@ $Properties['Input'] = Get_Client_Scripts().Get_Input_Scripts().Get_Responsive_S
 preg_match_all("~%(.*?)%~", $Page, $Propertie);
 
 foreach($Propertie[0] as $PropertieSet){
-	$Page = str_replace($PropertieSet, $Properties[str_replace("%", "", $PropertieSet)], $Page);
+	$rplc = str_replace("%", "", $PropertieSet);
+	$rplcVal = "";
+	if (isset($Properties[$rplc]))
+		$rplcVal = $Properties[$rplc];
+	
+	$Page = str_replace($PropertieSet, $rplcVal, $Page);
 }
 
 
@@ -44,6 +51,8 @@ $Render = Render();
 if ($Render === false){
 	echo $Page;
 }else{
+	
+	//FIX THIS
 	$resources = IncludeResources();
 	if ($resources !== false) $Render = '<!DOCTYPE html><html><head>'.$Properties['Css'].$Properties['Javascript'].$Properties['Input'].'</head>'.'<body>'.$Render.'</body></html>';
 	echo $Render;

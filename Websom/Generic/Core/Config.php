@@ -1,7 +1,7 @@
 <?php
 
 class Config {
-	function Get($name, $default) {
+	static function Get($name, $default) {
 		if (!file_exists(Document_root.'/Config/'.$name.'.ini')) {
 			file_put_contents(Document_root.'/Config/'.$name.'.ini', $default);
 		}

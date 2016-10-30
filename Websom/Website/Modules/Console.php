@@ -113,13 +113,18 @@ $(document).ready(function () {
 			if (cr.value.substr(0, cr.selectionStart).split("\n").length != lines.length) {
 				c.val(oldInput);
 			}else{
-				oldInput = c.val();
+				if (lines[lines.length-1].substr(0, tok.length) != tok) {
+					c.val(oldInput);
+				}else{
+					oldInput = c.val();
+				}
 			}
 		});
 		
 	});
 
 });
+
 		
 		';
 	}
@@ -141,13 +146,6 @@ $(document).ready(function () {
 
 class Console_Console extends Widget {
 	function get() {
-		Resources::Register([
-			'register' => 'Console',
-			'path' => 'Css/console.css',
-			'external' => false,
-			'type' => 'stylesheet'
-		]);
-		Responsive_Once(new Console_Console_Responsive());
 		return '<div class="Console_Container"><textarea name="Console" class="Console_Console"></textarea></div>';
 	}
 }
@@ -176,7 +174,9 @@ class Console_Lexer {
 			array_push($errors, $msg);
 		};
 		
-		$cmd = str_split($s);
+		$s = preg_replace('/[ ]{2,}(?=(?:[^"]*"[^"]*")*[^"]*\Z)/', ' ', $s); //Remove multiple spaces
+		
+		$cmd = str_split(trim($s, " "));
 		
 		$place = -1;
 
@@ -365,18 +365,9 @@ function CmdVersion () {
 		'thisver'
 	];
 	
-	$cmd->flags = [
-		Console_Flag('OnlyMajor', 'Only return the major version', ['M'], [
-			Console_Param('div', 'd', 'integer')
-		])
-	];
-	
-	$cmd->params = [
-		Console_Param('req', 'desc', 'string')
-	];
 	
 	$cmd->call = function ($params, $flags) {
-		return json_encode($params);
+		return Websom::$Version;
 	};
 	
 	return $cmd;
@@ -416,6 +407,80 @@ function CmdInfo() {
 	return $cmd;
 }
 
+function CmdHelp () {
+	
+	$cmd = new Console_Command('Help', 'View all commands.');
+	$cmd->aliases = [
+		'help',
+		'h'
+	];
+	
+	$cmd->flags = [
+		Console_Flag('CommandDetails', 'Show the command details', ['c', 'd'], [Console_Param('CommandName', 'Name of the command', 'string')])
+	];
+	
+	$cmd->call = function ($params, $flags) {
+		global $Console_Commands;
+		$list = "-- Help --
+Use (help -d command name/aliase) for command details.
+
+Commands
+";
+		
+		if (!isset($flags['CommandDetails'])) {
+			foreach ($Console_Commands as $cmd) {
+$list .= $cmd->name.'('.$cmd->aliases[0].'): '.$cmd->description.'
+';
+			}
+		}else{
+			foreach ($Console_Commands as $cmd) {
+				if ($cmd->name == $flags['CommandDetails']['CommandName'] OR in_array($flags['CommandDetails']['CommandName'], $cmd->aliases)) {
+$commandDetails = "Details of ".$cmd->name."
+--- Aliases ---
+	".implode(",
+	", $cmd->aliases)."
+--- Description ---
+".$cmd->description."
+--- Parameters ---
+";
+
+foreach ($cmd->params as $param)
+$commandDetails .= $param['t'].' '.$param['n'].': '.$param['d'].'
+';
+
+$commandDetails .= "
+--- Flags ---
+
+";
+
+foreach ($cmd->flags as $flag) {
+$commandDetails .= '('.($flag['li'] ? "List" : "Single").') '.$flag['n'].': '.$flag['d'].'
+	- Aliases -
+		'.implode(",
+		", $flag['a'])."
+	- Parameters -
+";
+
+foreach ($flag['p'] as $fparam)
+$commandDetails .= '		> '.$fparam['t'].' '.$fparam['n'].': '.$fparam['d'].'
+';
+//['n' => $name, 'd' => $description, 'a' => $aliases, 'p' => $params, 'li' => $list];	
+}
+
+return $commandDetails;
+					
+				}
+			}
+			return "No command found.";
+		}
+		
+		return $list;
+	};
+	
+	return $cmd;
+}
+
+
 function CmdName () {
 	$cmd = new Console_Command('Name', 'Get the website name.');
 	$cmd->aliases = [
@@ -435,7 +500,17 @@ onEvent("ready", function () {
 	Console_Register(CmdReload());
 	Console_Register(CmdName());
 	Console_Register(CmdInfo());
-	Resources::Remove("Css/console.css");
+	Console_Register(CmdHelp());
+	
+});
+
+onEvent("resourcesLoad", function () {
+	if (defined('Console_Page')) {
+		Theme::noTheme();
+		Responsive_Once(new Console_Console_Responsive());
+	}else{
+		Resources::Rule("Css/", "console.css", false);
+	}
 });
 
 

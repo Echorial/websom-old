@@ -144,4 +144,147 @@ function arr_replace($Search, $Replace, $Array){
 	}
 	return $Array;
 }
+
+
+
+
+/**
+* \ingroup BuiltInInputs
+*
+* The `Text` input is a nice easy to use validated text box.
+*
+* Compatible with `Input_List` and `Input_Group`
+*
+* Options:
+*	- Text->not: Warning this is experimental and may not work. A regex string.
+*	- Text->only: Warning this is experimental and may not work. A regex string.
+*	- Text->placeholder: A placeholder string.
+*	- Text->blank: If blank values are allowed.
+*	- Text->character_min: The least number of characters allowed.
+*	- Text->character_max: The most number of characters allowed.
+*
+*/
+class Text extends Input {
+	public $globalName = 'Text';
+	
+	public $character_min = 0;
+	public $character_max = 999999;
+	
+	public $not = "";
+	public $only = "";
+	
+	public $label = "input_text";
+	public $placeholder = "Text";
+	
+	public $displayType = "text";
+	public $blank = false;
+	
+	public $defaultValue = "";
+	
+	/**
+	* \param string $displayType allowed values (text, password, email)
+	*/
+	function __construct($displayType = "text") {
+		$this->displayType = $displayType;
+	}
+	
+	function get() {
+		$e = Theme::input_text($this->defaultValue, $this->placeholder, $this->label);
+	
+		
+		$e->attr("id", $this->id);
+		$e->attr("blank", ($this->blank ? 1:0));
+		$e->attr("count", $this->character_min.' '.$this->character_max);
+		$e->attr("not", $this->not);
+		$e->attr("only", $this->only);
+		$e->attr("isinput", "");
+		
+		//$html = '<input isinput id="'.$this->id.'" blank="'.($this->blank ? 1:0).'" count="'.$this->min.' '.$this->max.'" not="'.$this->not.'" only="'.$this->only.'" name="'.$meta['name'].'" type="text" placeholder="Text"></input>';
+		
+		return $e->get();
+	}
+	
+	function send() {
+		return '
+		return window.Websom.Theme.get($(element));
+		';
+	}
+	
+	function validate_client() {
+		return "
+		
+		var value = window.Websom.Theme.get($(element));
+		if ($(element).attr('blank') == '0' && value == '')
+		return 'Cannot be blank.';
+	
+		if ($(element).hasAttr('count')) {
+			var Count = $(element).attr('count').split(' ');
+			if (value.length > Count[1]) {
+				return 'Too long must be less than ' + Count[1] + ' characters.';
+			}
+			
+			if (value.length < Count[0]) {
+				return 'Too short must be at least ' + Count[0] + ' characters.';
+			}
+		}
+		if ($(element).hasAttr('not') && $(element).attr('not') !== '') {
+			var Not = new RegExp($(element).attr('not'), 'g');
+			if (value.match(Not) !== null)
+				return 'This contains an invalid character. The allowed characters are : ' + $(element).attr('not');
+		}
+		if ($(element).hasAttr('only') && $(element).attr('only') !== '') {
+			var Only = new RegExp($(element).attr('only'), 'g');
+			if (value.match(Only) !== null)
+				return 'This contains an invalid character. The allowed characters are : ' + $(element).attr('only');
+		}
+		
+		return true;
+		";
+	}
+	
+	function validate_server($data) {
+		if (!$this->blank AND $data == '') return "Cannot be blank.";
+		
+		if (strlen($data) > $this->character_max) {
+			return 'Too long must be less than ' . $this->character_max . ' characters.';
+		}
+		if (strlen($data) < $this->character_min) {
+			return 'Too short must be at least ' . $this->character_min . ' characters.';
+		}
+		
+		if ($this->only != "") {
+			preg_match('~'.$this->only.'~', $data, $match);
+			if (count($match) > 0)
+				return 'This contains an invalid character. '.implode(', ', $match);
+		}
+		
+		if ($this->not != ""){
+			preg_match('~'.$this->not.'~', $data, $match);
+			if (count($match2) > 0)
+				return 'This contains an invalid character. '.implode(', ', $match);
+		}
+		
+		return true;
+	}
+	
+	function error() {
+		return "
+			return $('<div>'+error+'</div>').insertAfter(element);
+		";
+	}
+	
+	function receive($data) {
+		return $data;
+	}
+	
+	function load() {
+		return '
+			window.Websom.Theme.set($(element), data);
+		';
+	}
+}
+
+
+
+
 ?>

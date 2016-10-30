@@ -7,7 +7,7 @@
 * 	- Author: Echorial
 * 	- Date: Unkown
 * 	- Version: 1.0
-* \breif This is the template class for all 'Views'.
+* \brief This is the template class for all 'Views'.
 *
 * Views are very useful for displaying information from a MySql database.
 *
