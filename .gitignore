@@ -1,0 +1,24 @@
+# Ignore everything:
+*
+!*/
+ 
+#ignore php error logs
+errors.log
+php_errors.log
+ 
+#ignore the backup 'orig' files produced by kdiff
+*.orig
+ 
+#ignore thumbnails created by windows
+Thumbs.db
+ 
+#misc
+.DS_Store
+.DS_Store?
+ehthumbs.db
+_notes
+cache
+dwsync.xml
+.svn
+.hg
+!.gitignore
