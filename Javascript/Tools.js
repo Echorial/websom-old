@@ -1,3 +1,19 @@
+var GlobalEventHooks = [];
+function onEvent(eventName, callback) {
+	GlobalEventHooks.push([callback, eventName]);
+}
+
+function CallEventHook (eventName, args = []) {
+	for(var i in GlobalEventHooks){
+		if (GlobalEventHooks[i][1] == eventName) {
+			if (typeof GlobalEventHooks[i][0] == 'function') {
+				GlobalEventHooks[i][0].apply(GlobalEventHooks[i][0], args);
+			}
+		}
+	}
+}
+
+
 String.prototype.contains = function(array){
 	for(var i = 0; i < this.length; i++){
 		for(var i2 = 0; i2 < array.length; i2++){
@@ -21,14 +37,15 @@ String.prototype.notcontains = function(array){
 	}
 	return false;
 }
-/* Danger
+/* Danager
 Array.prototype.replace = function(what, value){
 	for(var i = 0; i < this.length; i++){
 		if (this[i] == what){
 			this[i] = value;
 		}
 	}
-}*/
+}
+*/
 
 jQuery.fn.extend({
 	hasAttr: function (attr) {
@@ -36,6 +53,13 @@ jQuery.fn.extend({
 		if (typeof attr !== typeof undefined && attr !== false)
 			return true;
 		return false;
+	},
+	uniqueId: function () {
+			var n;
+			do
+			n = Math.floor(Math.random()*2000+1);
+			while($("#"+n).length > 0)
+			this.attr('id', n);
 	}
 });
 
@@ -60,3 +84,4 @@ function getCookie(cname) {
     }
     return false;
 }
+

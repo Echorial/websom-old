@@ -37,7 +37,7 @@ $(document).ready(function() {
 		setCookie('changePageMessages_', 'Deleted', -1);
 	}
 	//TEMP: until we can remove jquery ui\\ 
-	$('[requi]').each(function () {
+	/*$('[requi]').each(function () {
 		var that = $(this);
 		if (that.attr('requi') == 'datepicker') {
 			that.datepicker({
@@ -46,7 +46,7 @@ $(document).ready(function() {
 				}
 			});
 		}
-	});
+	});*/ //Gone
 	CallEventHook('DOMChange');
 	$("form").each(function(){
 		var that = this;
@@ -313,20 +313,7 @@ function Action_Clear(_form) {
 }
 
 
-var GlobalEventHooks = [];
-function onEvent(eventName, callback) {
-	GlobalEventHooks.push([callback, eventName]);
-}
 
-function CallEventHook (eventName) {
-	for(var i in GlobalEventHooks){
-		if (GlobalEventHooks[i][1] == eventName) {
-			if (typeof GlobalEventHooks[i][0] == 'function') {
-				GlobalEventHooks[i][0]();
-			}
-		}
-	}
-}
 
 onEvent('DOMChange', function () {
 	$("dynamic").each(function (){

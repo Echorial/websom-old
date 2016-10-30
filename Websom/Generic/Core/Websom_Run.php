@@ -35,6 +35,9 @@ function Websom_Reload_Config() {
 
 	$Websom_Config = Config::Get('Websom',
 	';Websom Config File
+	
+	live = false
+	
 	;Set these to override their value
 	;---------------------------------
 	;Websom_root = SomePath
@@ -70,6 +73,7 @@ class Websom {
 	public static $Config;
 	public static $Modules;
 	public static $Version;
+	public static $Live;
 	
 	public static function Module($name) {
 		if (isset(Websom::$Modules[$name])) return Websom::$Modules[$name];
@@ -77,8 +81,11 @@ class Websom {
 	}
 }
 
+Websom::$Modules = [];
 Websom::$Config = Websom_Reload_Config();
-Websom::$Version = 1.4;
+Websom::$Version = '1.5';
+Websom::$Live = (Websom::$Config['live'] == "yes" ? true : false);
+
 //Start session\\ 
 session_start();
 
@@ -131,8 +138,7 @@ function Error($type, $msg, $fatal = false){
 	$msg = '['.$type.' Error]: '.$msg;
 	
 	if ($fatal){
-		echo 'Som ting wong '.$msg;
-		die();
+		throw new Exception("Fatal error ".$msg);
 	}else{
 		return $msg;
 	}
@@ -199,6 +205,8 @@ mail($to, $subject, $body, $headers);
 * Global events:
 * 	- ready:  called when most functions/tools are ready to use.
 * 	- modulesLoaded: called when all modules are locked and loaded.
+* 	- resourcesLoad: called before Css and Js resouces are loaded.
+* 	- end: This is called at the end but before resources are included on the page, the page is sent, and more.
 */
 
 $onEvents = array();
@@ -206,18 +214,23 @@ $onEvents = array();
 * \ingroup Event
 * This function will register the event hook with the provided event name.
 * 
+* \param boolean $after This sets this event hook to be called after all of the other "normal" event hooks are called.
+*
 * Information:
 * 	- Return: void
 * 	- Author: Echorial
 * 	- Date: Unkown
 * 	- Version: 1.0
 */
-function onEvent($name, callable $callback) {
+function onEvent($name, callable $callback, $after = false) {
 	global $onEvents;
-	if (!isset($onEvents[$name])) {
-		$onEvents[$name] = array($callback);
+	$str = "_after";
+	if (!$after) $str = '';
+	
+	if (!isset($onEvents[$name.$str])) {
+		$onEvents[$name.$str] = array($callback);
 	}else{
-		array_push($onEvents[$name], $callback);
+		array_push($onEvents[$name.$str], $callback);
 	}
 }
 
@@ -236,11 +249,21 @@ function callEvent($name, $args = array()) {
 	if (isset($onEvents[$name]))
 		foreach($onEvents[$name] as $event)
 			$event($args);
+			
+	if (isset($onEvents[$name.'_after']))
+		foreach($onEvents[$name.'_after'] as $event)
+			$event($args);
 }
 
 
 
 include("Responsive.php");
+
+include("Element.php");
+
+include("Javascript.php");
+
+include("Hookable.php");
 
 include("Resource.php");
 
@@ -254,7 +277,25 @@ include(Websom_root."/Generic/Input/Input.php");
 
 include("Data_Form.php");
 
+include("Theme.php");
+
 include("Websom_Run_Modules.php");
+
+callEvent("resourcesLoad");
+
+Resources::Register_All('Css/');
+Resources::Register_All('Javascript/');
+
+Resources::setInfo("Javascript/Jquery.js", ["index" => 9999]);
+Resources::setInfo("Javascript/Tools.js", ["index" => 9998]);
+
+Resources::setInfo("Javascript/main.js", ["index" => 9997]);
+
+Resources::setInfo("Javascript/Form.js", ["index" => 9996]);
+Resources::setInfo("Javascript/Theme.js", ["index" => 9996]);
+Resources::setInfo("Javascript/Input.js", ["index" => 9996]);
+
+
 
 include("Widget_Run.php");
 

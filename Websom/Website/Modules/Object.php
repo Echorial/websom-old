@@ -1,6 +1,6 @@
 <?php
 /**
-* \defgroup Data Data tools
+* \defgroup Data Database tools
 * These tools provide a very quick and easy way to create great database viewing and manipulation thats responsive and fast.
 */
 
@@ -136,11 +136,6 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 	* 	- $columnValue: The value to check for.
 	* 	- $keepValueInQuery: If the finder should just insert the value into the query or if it should use SQL Injection protection and use the value literaly.
 	*
-	* Information:
-	* 	- Return: boolean
-	* 	- Author: Echorial
-	* 	- Date: Unkown
-	* 	- Version: 1.0
 	*/
 	public function where($separator, $columnName, $operator, $columnValue, $keepValueInQuery = false) {
 		array_push($this->_whereHistory, array($separator, $columnName, $operator, $columnValue, $keepValueInQuery));
@@ -169,11 +164,6 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 	/**
 	* This function will check if the column value is BETWEEN the two given values `$cv1`, `$cv2`.
 	*
-	* Information:
-	* 	- Return: void
-	* 	- Author: Echorial
-	* 	- Date: Unkown
-	* 	- Version: 1.0
 	*/
 	public function between($separator, $columnName, $cv1, $cv2) {
 		array_push($this->_betweenHistory, array($separator, $columnName, $cv1, $cv2));
@@ -200,11 +190,6 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 	*
 	* <div class="warning">This does not use prepared statements, so make sure the input is safe.</div>
 	*
-	* Information:
-	* 	- Return: void
-	* 	- Author: Echorial
-	* 	- Date: Unkown
-	* 	- Version: 1.0
 	*/
 	public function order($column, $o) {
 		array_push($this->_orderHistory, array($column, $o));
@@ -216,11 +201,6 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 	*
 	* <div class="warning">This does not use prepared statements, so make sure the input is safe.</div>
 	*
-	* Information:
-	* 	- Return: void
-	* 	- Author: Echorial
-	* 	- Date: Unkown
-	* 	- Version: 1.0
 	*/
 	public function group($column) {
 		array_push($this->_groupHistory, array($column));
@@ -235,11 +215,6 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 	* $finder->where("", "ok", "=", "no");
 	* $finder->wrap(); //The query now looks like this: (`ok` = ?)
 	* \endcode
-	* Information:
-	* 	- Return: void
-	* 	- Author: Echorial
-	* 	- Date: Unkown
-	* 	- Version: 1.0
 	*/
 	public function wrap($separator = null) {
 		$this->query .= ($this->wrapa) ? ') ' : $separator.' (';
@@ -254,9 +229,18 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 	}
 	
 	/**
+	* Use this to insert a plain string into the MySql query.
+	*
+	* \param string $query The string that will be appended to the query.
+	*/
+	public function addQuery($query) {
+		$this->query .= ' '.$query.' ';
+	}
+	
+	/**
 	* This will merge two finders together.
 	* <div class="note">A new version of finder will be more stable with wrap and other statements.</div>
-	* <div class="warning">This will not merge any wraped statements.</div>
+	* <div class="warning">This will not merge any wraped or plain statements.</div>
 	*
 	* Information:
 	* 	- Return: void
@@ -344,13 +328,25 @@ class Data_Builder {
 		if (isset($types[gettype($columnValue)])) {
 			$type = $types[gettype($columnValue)];
 		}else{
-			Error('Data', 'Cannot store type "'.gettype($columnValue).'" in database.', true);
+			Error('Data', 'Cannot store type "'.gettype($columnValue).'" in database. Column: '.$columnName, true);
 		}
 		$this->types .= $type;
 		
 		array_push($this->values, array($columnName, $columnValue));
 	}
 
+	/**
+	* Create key/value array from this builder.
+	*/
+	public function arrayify() {
+		$rtn = [];
+		
+		foreach ($this->values as $v)
+			$rtn[$v[0]] = $v[1];
+		
+		return $rtn;
+	}
+	
 	public function getPrepared($type = 0) {
 		$t1 = '(';
 		$t2 = ')';
@@ -838,7 +834,7 @@ function UnTable($mod) {
 
 /**
 * \ingroup Data
-*
+* \deprecated Use the new `Control_Structure` class.
 * Data_Structure's are used by the Data_Output_* and Data_Input_* tools for quick and easy MySql viewing and manipulation.
 *
 * Example usage:
@@ -921,7 +917,7 @@ class Data_Input {
 
 /**
 * \ingroup Data
-*
+* \deprecated Use the new `Control_Structure` class.
 * This function will return a string containg a form that will when submited create a row in the $dataStructure's table with the $dataStructure's controls
 *
 * Example usage:
@@ -1019,7 +1015,7 @@ function Data_Structure_Cook ($dataStructure, $userInput) {
 
 /**
 * \ingroup Data
-*
+* \deprecated Use the new `Control_Structure` class.
 * This function will return a string containg a form that will when submited call a function that you can hook into.
 *
 * Example usage:
@@ -1087,7 +1083,7 @@ function Data_Input_Create_Start($Data_Structure){
 //Easy database data editor tools
 /**
 * \ingroup Data
-*
+* \deprecated Use the new `Control_Structure` class.
 * This function works much the same as Data_Input_Create(), but rather than create a row it will edit the row given.
 *
 * Example usage:
@@ -1162,7 +1158,7 @@ function Data_Input_Edit($dataStructure, $rowId, $loadValues = true) {
 
 /**
 * \ingroup Data
-*
+* \deprecated Use the new `Control_Structure` class.
 * This function will return a html string that allows clients to sort and view information in a MySql table.
 *
 * Example usage:
@@ -1254,7 +1250,9 @@ function Data_Send_Messages($ds) {
 		InputSend(InputSuccess($ds->success));
 }
 
-//This function is a complete mess, it will be fixed soon.
+/**
+* \deprecated Use the new `Control_Structure` class.
+*/
 function Data_Controls_Stringify($dataStructure, $values = null) {
 	$rtn = $dataStructure->htmlStructure;
 	$noStruct = ($rtn == '');
@@ -1492,7 +1490,7 @@ class Storage {
 		$tbl = GetTable('Object.Storage');
 		$found = Data_Select($tbl, $finder);
 		if (count($found) == 0) return false;
-		return json_decode($found[0]['sstorage']);
+		return json_decode($found[0]['sstorage'], true);
 	}
 	
 	static public function Remove($key) {
@@ -1551,6 +1549,369 @@ onEvent('ready', function () {
 	Console_Register(CmdStorageGet());
 	Console_Register(CmdStorageSet());
 	Console_Register(CmdStorageRemove());
+	
+	$osl = new Object_Sort_Listener();
+	Register_Action($osl);
 });
+
+
+
+
+
+class Object_Sort_Listener extends Action {
+	public $name = 'Object_Sort_Listener';
+	
+	function javascript () {
+		return '
+		
+		var parent = $(element).closest(".Object_Sort_Wrap");
+		var viewer = parent.find(".Object_Sort_View");
+		
+		viewer.html(data["html"]);
+		';
+	}
+}
+
+
+
+
+
+
+/**
+* \defgroup DataTools Data Tools
+*
+* Welcome to the nice new shiny object oriented data tools.
+* This toolkit lets you construct Controls that interface with a `Control_Structure` that interfaces with the database.
+*
+* This is very new, and may be unstable. Nevertheless you should use it due to its compatiblity with the equaly new `Input` system.
+*
+* Examples are not yet ready but should appear soon.
+*/
+
+/**
+* \ingroup DataTools
+*
+* The control structure is built to provide an easy to use database manipulation tool.
+* 
+*
+*/
+class Control_Structure extends Hookable {
+	private $controls = [];
+	private $options = [];
+	private $table = "";
+	
+	/**
+	* Use this to delay operations in seconds.
+	*/
+	public $delay = 1;
+	
+	public $structure = false;
+	
+	static private $count = 0;
+	
+	/**
+	* \param array $options The options are structured like so ["type" => "create", "table" => "myTable"]
+	*
+	* Current options:
+	* 	- char type: The type of operation the Control_Structure will do to the data base. Accepted values: "c", "e", "s", "p". More detail below.
+	* 	- string table: The table name that the Control_Structure will use. Accepted value type: string
+	*
+	* Types:
+	* 	- c: This type will create a new row with the provided column and control pairs. <br>
+	* 		Events:
+	* 			- "create"($index, $data): When the client creates a new row. Params: index(The id for the new row), data(the new data)
+	* 	- e: This will load the row with the `id`(put the id in the options. "id" => 123), then allow the client to edit and save to the same row. <br>
+	* 		Options:
+	* 			- integer "id": Id of the row to edit.
+	* 		<br>
+	* 		Events:
+	* 			- "edit"($data): When the client edits a row. Params: data(the new data), Return false to cancel the edit.
+	* 	- s: This will create a sortable html element with the column/control pairs soring the view.
+	* 		Options:
+	* 			- Structure "areaStructure": A Structure object that goes around the control area and view area. Variables %sort%, %view%
+	* 			- boolean "viewOnStart": If view area should show results at the start.
+	* 			- View "view"(Required): The view object that will be used to display the sorted rows. Note: Only the sub() method is used on the view.
+	* 		Events:
+	* 			- "sortData"($data): This is called before the viewer creates a finder to find the data. Return the modified $data object.
+	* 			- "sortFinder"(&$finder): This is called with a reference to a finder. You can add or modify the finder.
+	* 	- p: Plain input.
+	*
+	*/
+	public function __construct($options) {
+		if (!isset($options['type'])) throw new Exception("No type set in Control_Structure");
+		if (!isset($options['table'])) throw new Exception("No table set in Control_Structure");
+		
+		$this->table = GetTable($options['table']);
+		
+		$this->options = $options;
+		
+		
+				
+		$this->on("success", function ($data) {
+			$m = new Message();
+			$m->add("form", Message::Success("Success"));
+			return $m;
+		});
+		
+		$this->on("error", function ($data) {
+			$m = new Message();
+			$m->add("form", Message::Error("Error"));
+			return $m;
+		});
+		
+		$this->on("create", function ($index, $data) {
+			
+		});
+		
+		$this->on("edit", function ($data) {
+			return true;
+		});
+		
+		$this->on("sortData", function ($data) {
+			return $data;
+		});
+		
+		$this->on("sortFinder", function (&$finder) {
+			
+		});
+		
+	}
+	
+	public $clientEvents = [];
+	
+	public function client($event, $javascript) {
+		$this->clientEvents[$event] = $javascript;
+	}
+	
+	public function addControl($name, $control) {
+		array_push($this->controls, ['n' => $name, 'c' => $control]);
+	}
+	
+	public function sorting(callable $callback) {
+		
+	}
+	
+	public function get() {
+		if ($this->options["type"] == 's')
+			return $this->get_sort();
+		
+		self::$count++;
+		$f = new Form("Object_Form_".self::$count);
+		
+		$f->clientEvents = $this->clientEvents;
+		
+		$f->on("success", function ($data) {
+			return $this->event("success", [$data]);
+		});
+		
+		$f->on("error", function ($data) {
+			return $this->event("error", [$data]);
+		});
+		
+		
+		
+		$sendStructure = $this->structure;
+	
+		$editLoads = [];
+		
+		foreach ($this->controls as $c) {
+			$f->addInput($c['n']."_con", $c['c']->get());
+			
+			array_push($editLoads, $c['n']);
+			
+			if ($sendStructure !== false) {
+				$sendStructure->html = str_replace('%'.$c['n'].'%', '%'.$c['n'].'_con%', $sendStructure->html);
+			}
+		}
+		
+		$f->structure = $sendStructure;
+		
+		if ($this->options['type'] == 'e') {
+			if (!isset($this->options["id"])) throw new Exception("No id provided in Control_Structure edit operation");
+			
+			$find = new Data_Finder(false, implode(", ", $editLoads));
+			$find->where("", "id", "=", $this->options["id"]);
+			$row = Data_Select($this->table, $find);
+			
+			foreach ($row[0] as $k => $v) {
+				$row[0][$k."_con"] = $this->getControl($k)->from($row[0][$k]);
+				unset($row[0][$k]);
+			}
+			
+			if (count($row) > 0) {
+				$f->load($row[0]);
+			}
+		}
+		
+		$rtn = $f->check();
+		if ($rtn !== false) {
+			Wait($this->delay);
+			$get = false;
+			switch ($this->options['type']) {
+				case 'c':
+					$get = $this->get_create($rtn, $f);
+					break;
+				case 'e':
+					$get = $this->get_edit($rtn, $f);
+					break;
+			}
+			
+			return $get;
+		}
+		
+		return $f->get();
+	}
+	
+	public function get_create($data, $form) {
+		$rtn = true;
+		
+		$b = new Data_Builder();
+		foreach ($this->controls as $c) {
+			$name = $c['n'].'_con';
+			if (!array_key_exists($name, $data)) continue;
+				$val = $data[$name];
+				
+				$err = $c['c']->validate($data[$name]);
+				if (!$err) {
+					$rtn = false;
+				}
+				
+				$b->add($c['n'], $c['c']->to($val));
+		}
+		
+		if ($rtn) {
+			$index = Data_Insert($this->table, $b);
+			
+			$this->event("create", [$index, $b->arrayify()]);
+		}
+		
+		return $rtn;
+	}
+	
+	private function getControl($name) {
+		foreach ($this->controls as $c)
+			if ($c['n'] == $name)
+				return $c['c'];
+		return false;
+	}
+	
+	public function get_edit($data, $form) {
+		$rtn = true;
+		
+		
+		$f = Quick_Find([["id", "=", $this->options["id"]]]);
+		
+		$b = new Data_Builder();
+		foreach ($this->controls as $c) {
+			$name = $c['n'].'_con';
+			if (!array_key_exists($name, $data)) continue;
+				$val = $data[$name];
+				
+				$err = $c['c']->validate($data[$name]);
+				if (!$err) {
+					$rtn = false;
+				}
+				
+				$b->add($c['n'], $c['c']->to($val));
+		}
+		
+		if ($rtn AND $this->event("edit", [$b->arrayify()]) !== false) {
+			Data_Update($this->table, $b, $f);
+		}
+		
+		return $rtn;
+	}
+	
+	private function findSorted($data) {
+		$finder = new Data_Finder();
+		
+		$rtn = true;
+		foreach ($this->controls as $c) {
+			$name = $c['n'].'_con';
+			if (!array_key_exists($name, $data)) continue;
+				$val = $data[$name];
+				
+				$err = $c['c']->validate($data[$name]);
+				if (!$err) {
+					$rtn = false;
+					return 'Error.';
+				}
+				$c['c']->filter($val, $finder, $c['n']);
+		}
+		
+		$found = Data_Select($this->table, $finder);
+		
+		$html = "";
+		
+		foreach ($found as $row) {
+			$html .= $this->options["view"]->sub($row);
+		}
+		
+		return $html;
+	}
+	
+	public function get_sort() {
+		
+		
+		
+		self::$count++;
+		$f = new Form("Object_Form_".self::$count);
+		
+		$f->clientEvents = $this->clientEvents;
+		
+		$f->on("success", function ($data) {
+			$m = $this->event("success", [$data]);
+			
+			$html = $this->findSorted($data);
+			
+			$m->add("form", Message::Action("Object_Sort_Listener", ["html" => $html]));
+			return $m;
+		});
+		
+		$f->on("error", function ($data) {
+			return $this->event("error", [$data]);
+		});
+		
+		$sortStructure = $this->structure;
+		
+		$areaStructure;
+		
+		if (isset($this->options["areaStructure"])) {
+			$areaStructure = $this->options["areaStructure"];
+		}else{
+			$areaStructure = new Structure(Theme::grid([[["%sort%", 4], ["%view%", 8]]], "Sorting")->get());
+		}
+		
+		$sorts = [];
+		foreach ($this->controls as $c) {
+			$f->addInput($c['n']."_con", $c['c']->get());
+			
+			$sorts[$c['n']] = $c['c'];
+			
+			if ($sortStructure !== false) {
+				$sortStructure->html = str_replace('%'.$c['n'].'%', '%'.$c['n'].'_con%', $sortStructure->html);
+			}
+		}
+		
+		if (isset($this->options["viewOnStart"]))
+			if ($this->options["viewOnStart"])
+				$f->submitOnStart = true;
+		
+		$f->structure = $sortStructure;
+		
+		$val = $f->check();
+		
+		
+		
+		$html = $areaStructure->get([
+			"sort" => $f->get(),
+			"view" => "<div class='Object_Sort_View'></div>"
+		]);
+		
+		return "<div class='Object_Sort_Wrap'>".$html."</div>";
+	}
+	
+}
+
 
 ?>

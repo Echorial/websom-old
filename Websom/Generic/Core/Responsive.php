@@ -63,8 +63,7 @@ function Websom_Check_Responsive () {
 	if ($_POST['responiveid'] > count($Responives) OR $_POST['responiveid'] < 0) return false;
 	$__POST = $_POST;
 	unset($__POST['responiveid']);
-	
-	$responseData = $Responives[$_POST['responiveid']-1]->response($__POST);
+	$responseData = $Responives[$_POST['responiveid']-1]->response(json_decode(json_encode($__POST), true));
 	$data = ['responsive_321_type' => false];
 	if (is_array($responseData)) {
 		$data = $responseData;
@@ -85,7 +84,7 @@ function Get_Responsive_Scripts() {
 
 /**
 * \ingroup Responive
-* \breif The Responive class is a template for creating quick client-server comunication
+* \brief The Responive class is a template for creating quick client-server comunication
 *
 * Information: 
 *

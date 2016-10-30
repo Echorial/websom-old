@@ -7,10 +7,10 @@
 * 	- Author: Echorial
 * 	- Date: Unkown
 * 	- Version: 1.0
-* \breif This is the template class for all 'Widgets'.
+* \brief This is the template class for all 'Widgets'.
 *
 *
-* Widgets are used everywhere in websom. Typically these are used in modules, for allowing other programmers to easily call upon your widget and recive some sort of html structured
+* Widgets are used everywhere in websom. Typically these are used in modules, for allowing other programmers to easily call upon your widget and receive some sort of html structured
 * item. A good example of a widget could be, if you have a Module that manages Forums, and you want to implement this Forum tool into a page on your website. To do so you would create
 * a new Forum_Viewer widget and call Get_Widget($myForumViewer), then echo that onto your page.
 *
@@ -21,7 +21,7 @@ class Widget {
 	public $owner = "None";
 	public $name = "Untitled_Widget";
 	/**
-	* \breif This method is called when the widget is used.
+	* \brief This method is called when the widget is used.
 	* Information:
 	* - Return: string
 	*
