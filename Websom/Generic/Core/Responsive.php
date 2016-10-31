@@ -51,7 +51,7 @@ function Responsive_Included($response) {
 * 	- Version: 1.0
 */
 function Responsive_Once($responsive) {
-	if (!Responsive_Included($response))
+	if (!Responsive_Included($responsive))
 		Get_Responsive($responsive);
 }
 
