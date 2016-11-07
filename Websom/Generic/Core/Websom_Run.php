@@ -26,12 +26,18 @@ define("Websom_root", $docRoot.'/Websom');
 define("Document_root", $docRoot);
 define("Document_root_local", '/');
 define("Host", 'http://www.'.$_SERVER['HTTP_HOST']);
-define("Website_name", "Websom_Website");
+
 define("Modules_root", Websom_root.'/Website/Modules');
+
+include("Hookable.php");
+include("Config.php");
+include("Email.php");
+
+Email::init();
 
 function Websom_Reload_Config() {
 	//Load Websom Config
-	include("Config.php");
+	
 
 	$Websom_Config = Config::Get('Websom',
 	';Websom Config File
@@ -68,13 +74,36 @@ function Websom_Reload_Config() {
 	return $Websom_Config;
 }
 
-
+/**
+* \ingroup Globals
+* The static global Websom class contains information about the website and websom.
+* 
+* 
+*/
 class Websom {
+	/**
+	* This is the parsed Websom config file structured in a key/value array.
+	*/
 	public static $Config;
+	
+	/**
+	* An array of modules that are loaded.
+	*/
 	public static $Modules;
+	
+	/**
+	* The websom version.
+	*/
 	public static $Version;
+	
+	/**
+	* If the website is live. True or false.
+	*/
 	public static $Live;
 	
+	/**
+	* Returns an array like this(["status" => true or false, "info" => the module info array]) if the Module was found or false if not.
+	*/
 	public static function Module($name) {
 		if (isset(Websom::$Modules[$name])) return Websom::$Modules[$name];
 		return false;
@@ -177,6 +206,7 @@ function CallFunctionArgs($Name, $Args = array()){
 function Wait($time) {
 	sleep($time);
 }
+
 /**
 * \ingroup PageFunctions
 * Use this to send mail.
@@ -263,7 +293,7 @@ include("Element.php");
 
 include("Javascript.php");
 
-include("Hookable.php");
+
 
 include("Resource.php");
 
