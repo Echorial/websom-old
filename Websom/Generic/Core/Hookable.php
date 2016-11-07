@@ -41,7 +41,7 @@ class Hookable {
 	* Use this to hook into a single object's event.
 	* 
 	* @param string $event The event name to listen for.
-	* @param callable $callback A function to call when the event is invoked. This function should return true if it wishes the event to be cancled or false if not.
+	* @param callable $callback A function to call when the event is invoked. This function should return true if it wishes the event to be canceled or false if not.
 	* 
 	* @return void
 	*/
@@ -56,18 +56,18 @@ class Hookable {
 	* @param string $event The event name.
 	* @param array $args A list of params to pass into the listening function(s).
 	* 
-	* @return 1. True if the event should be cancled or false if not. 2. Mixed value for single hook.
+	* @return 1. True if the event should be canceled or false if not. 2. Mixed value for single hook.
 	*/
 	public function event($event, $args) {
-		$cancled = false;
+		$canceled = false;
 		
 		
-		if (isset(self::_hookable_global_hooks[$event])) {
-			foreach (self::_hookable_global_hooks[$event] as $hook) {
+		if (isset(self::$_hookable_global_hooks[$event])) {
+			foreach (self::$_hookable_global_hooks[$event] as $hook) {
 				if ($hook[1]) {
 					$val = call_user_func_array($hook[0], $args);
 					if ($val === true) {
-						$cancled = true;
+						$canceled = true;
 					}elseif ($val !== false) {
 						return $val;
 					}
@@ -79,14 +79,14 @@ class Hookable {
 			foreach ($this->_hookable_hooks[$event] as $hook) {			
 				$val = call_user_func_array($hook, $args);
 				if ($val === true) {
-					$cancled = true;
+					$canceled = true;
 				}elseif ($val !== false) {
 					return $val;
 				}
 			}
 		}
 		
-		return $cancled;
+		return $canceled;
 	}
 	
 	//Static hooks
@@ -95,14 +95,14 @@ class Hookable {
 	* This will listen for an event on all instances.
 	* 
 	* @param string $event The event name to listen for.
-	* @param callable $callback A function that will be called when any instance or static class gets its event invoked. This should also return true if the event should be cancled or false if not.
+	* @param callable $callback A function that will be called when any instance or static class gets its event invoked. This should also return true if the event should be canceled or false if not.
 	* @param bool $allObjectInstances If this should listen on object instances.
 	* 
 	* @return void
 	*/
 	static public function onGlobal($event, callable $callback, $allObjectInstances = false) {
-		if (!isset(self::_hookable_global_hooks[$event])) self::_hookable_global_hooks[$event] = [];
-		array_push(self::_hookable_global_hooks[$event], [$callback, $allObjectInstances]);
+		if (!isset(self::$_hookable_global_hooks[$event])) self::$_hookable_global_hooks[$event] = [];
+		array_push(self::$_hookable_global_hooks[$event], [$callback, $allObjectInstances]);
 	}
 	
 	/**
@@ -111,17 +111,17 @@ class Hookable {
 	* @param string $event The event name to invoke.
 	* @param array $args A list of params to pass into the listening function(s).
 	* 
-	* @return 1. True if the event should be cancled or false if not. 2. Mixed value for single hook.
+	* @return 1. True if the event should be canceled or false if not. 2. Mixed value for single hook.
 	*/
 	static public function globalEvent($event, $args) {
-		$cancled = false;
-		
-		if (isset(self::_hookable_global_hooks[$event])) {
-			foreach (self::_hookable_global_hooks[$event] as $hook) {
+		$canceled = false;
+		if (isset(self::$_hookable_global_hooks[$event])) {
+			foreach (self::$_hookable_global_hooks[$event] as $hook) {
+				
 				if (!$hook[1]) {
 					$val = call_user_func_array($hook[0], $args);
 					if ($val === true) {
-						$cancled = true;
+						$canceled = true;
 					}elseif ($val !== false) {
 						return $val;
 					}
@@ -129,7 +129,7 @@ class Hookable {
 			}
 		}
 		
-		return $cancled;
+		return $canceled;
 	}
 	
 }
