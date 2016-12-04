@@ -1,6 +1,36 @@
 $(document).ready(function() {
 	//Run responive garbage\\ 
-	for (var rep = 0; rep < responsives.length; rep++) {
+	for (var rep in responsives) {
+		(
+		function(id){
+			var serverResponseCallback = function () {};
+			responsives[rep](
+				function (msg, inlineCback = false){
+					msg['responiveid'] = id;
+					$.ajax({
+						type: "POST",
+						url: window.location.href,
+						data: $.param(msg),
+						success: function(data){
+							data = JSON.parse(data);
+							if (data.responsive_321_type == true)
+								if (inlineCback === false) {
+									serverResponseCallback(data);
+								}else{
+									inlineCback(data);
+								}
+						}
+					});
+				},
+				function (callback) {
+					serverResponseCallback = callback;
+				}
+			)
+		}
+		(rep));
+	}
+
+/*	for (var rep = 0; rep < responsives.length; rep++) {
 		(
 		function(id){
 			var serverResponseCallback = function () {};
@@ -28,7 +58,7 @@ $(document).ready(function() {
 			)
 		}
 		(rep));
-	}
+	}*/
 	
 	//This is for when the page refreshes or changes\\ 
 	var cookie = getCookie('changePageMessages_');

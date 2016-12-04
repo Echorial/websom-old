@@ -88,10 +88,10 @@ function Input_text_Html_Get($Options, $args, $Value = ''){
 		$attr .= ' count="'.$Options['count'].'" ';
 	}
 	if (isset($Options['not'])){
-		$attr .= ' not="'.$Options['not'].'" ';
+		$attr .= ' not="'.$Options['not'][0].'" notdesc="'+$Options['not'][1]+'"';
 	}
 	if (isset($Options['only'])){
-		$attr .= ' only="'.$Options['only'].'" ';
+		$attr .= ' only="'.$Options['only'][0].'" onlydesc="'+$Options['only'][1]+'"';
 	}
 	if (isset($Options['placeholder'])){
 		$attr .= ' placeholder="'.$Options['placeholder'].'" ';
@@ -156,8 +156,8 @@ function arr_replace($Search, $Replace, $Array){
 * Compatible with `Input_List` and `Input_Group`
 *
 * Options:
-*	- Text->not: Warning this is experimental and may not work. A regex string.
-*	- Text->only: Warning this is experimental and may not work. A regex string.
+*	- Text->not: This will not allow any characters found with the regex string. Example Text->not = ["[A-Z0-9]", "You cannot use the characters A-Z or 0-9"];
+*	- Text->only: This will only allow the regex string characters. Example Text->only = ["[A-Z0-9]", "The allowed characters are A-Z and 0-9"];
 *	- Text->placeholder: A placeholder string.
 *	- Text->blank: If blank values are allowed.
 *	- Text->character_min: The least number of characters allowed.
@@ -170,8 +170,8 @@ class Text extends Input {
 	public $character_min = 0;
 	public $character_max = 999999;
 	
-	public $not = "";
-	public $only = "";
+	public $not = ["", ""];
+	public $only = ["", ""];
 	
 	public $label = "input_text";
 	public $placeholder = "Text";
@@ -182,21 +182,25 @@ class Text extends Input {
 	public $defaultValue = "";
 	
 	/**
-	* \param string $displayType allowed values (text, password, email)
+	* \param string $displayType allowed values (text, password, email, multiline)
 	*/
 	function __construct($displayType = "text") {
 		$this->displayType = $displayType;
 	}
 	
 	function get() {
-		$e = Theme::input_text($this->defaultValue, $this->placeholder, $this->label);
-	
+		$e = Theme::input_text($this->defaultValue, $this->placeholder, $this->label, ["type" => $this->displayType]);
+		
+		if (!is_array($this->only) OR !is_array($this->not))
+			throw new Exception("Input only/not property needs to be an array [regex string, error string].");
 		
 		$e->attr("id", $this->id);
 		$e->attr("blank", ($this->blank ? 1:0));
 		$e->attr("count", $this->character_min.' '.$this->character_max);
-		$e->attr("not", $this->not);
-		$e->attr("only", $this->only);
+		$e->attr("not", $this->not[0]);
+		$e->attr("notdesc", $this->not[1]);
+		$e->attr("only", $this->only[0]);
+		$e->attr("onlydesc", $this->only[1]);
 		$e->attr("isinput", "");
 		
 		//$html = '<input isinput id="'.$this->id.'" blank="'.($this->blank ? 1:0).'" count="'.$this->min.' '.$this->max.'" not="'.$this->not.'" only="'.$this->only.'" name="'.$meta['name'].'" type="text" placeholder="Text"></input>';
@@ -230,12 +234,13 @@ class Text extends Input {
 		if ($(element).hasAttr('not') && $(element).attr('not') !== '') {
 			var Not = new RegExp($(element).attr('not'), 'g');
 			if (value.match(Not) !== null)
-				return 'This contains an invalid character. The allowed characters are : ' + $(element).attr('not');
+				return 'This contains an invalid character. The allowed characters are : ' + $(element).attr('notdesc');
 		}
 		if ($(element).hasAttr('only') && $(element).attr('only') !== '') {
 			var Only = new RegExp($(element).attr('only'), 'g');
-			if (value.match(Only) !== null)
-				return 'This contains an invalid character. The allowed characters are : ' + $(element).attr('only');
+			value = value.replace(Only, '');
+			if (value != '')
+				return 'This contains an invalid character. The allowed characters are : ' + $(element).attr('onlydesc');
 		}
 		
 		return true;
@@ -252,16 +257,16 @@ class Text extends Input {
 			return 'Too short must be at least ' . $this->character_min . ' characters.';
 		}
 		
-		if ($this->only != "") {
-			preg_match('~'.$this->only.'~', $data, $match);
-			if (count($match) > 0)
-				return 'This contains an invalid character. '.implode(', ', $match);
+		if ($this->only[0] != "") {
+			$str = preg_replace('~'.$this->only[0].'~', '', $data);
+			if ($str != "")
+				return 'Error there are some invalid characters. The allowed characters are '.$this->only[1];
 		}
 		
-		if ($this->not != ""){
-			preg_match('~'.$this->not.'~', $data, $match);
+		if ($this->not[0] != ""){
+			preg_match('~'.$this->not[0].'~', $data, $match2);
 			if (count($match2) > 0)
-				return 'This contains an invalid character. '.implode(', ', $match);
+				return 'This contains an invalid character. '.implode(', ', $match2);
 		}
 		
 		return true;

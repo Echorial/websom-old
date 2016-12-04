@@ -26,32 +26,57 @@ define("Websom_root", $docRoot.'/Websom');
 define("Document_root", $docRoot);
 define("Document_root_local", '/');
 define("Host", 'http://www.'.$_SERVER['HTTP_HOST']);
-define("Website_name", "Websom_Website");
+
 define("Modules_root", Websom_root.'/Website/Modules');
+
+/**
+* \defgroup Helper Helpers
+* 
+* Currently Websom only provides 1 generic helper, but with time more will be added.
+* 
+* 
+*/
+//Helper classes
+include("String.php");
+
+
+include("Session.php");
+
+include("Hookable.php");
+include("Config.php");
+include("Email.php");
+
+Email::init();
 
 function Websom_Reload_Config() {
 	//Load Websom Config
-	include("Config.php");
+	
 
 	$Websom_Config = Config::Get('Websom',
-	';Websom Config File
-	
-	live = false
-	
-	;Set these to override their value
-	;---------------------------------
-	;Websom_root = SomePath
-	;Document_root = SomePath
-	;Host = http://www.example.com
+";Websom Config File
 
-	;Website Details
-	;---------------
-	Website_name = DefaultName
-	;Version
-	Website_minor = 0
-	Website_major = 0
+live = false
 
-	;End');
+;Set these to override their value
+;---------------------------------
+;Websom_root = SomePath
+;Document_root = SomePath
+;Host = http://www.example.com
+
+;Website Details
+;---------------
+Website_name = DefaultName
+;Version
+Website_minor = 0
+Website_major = 0
+
+;Hepler settings
+;--------------
+
+;Str helper
+Use_MultiByte_String = \"no\"
+
+;End");
 
 	if (isset($Websom_Config['Document_root'])) {
 		define("Document_root", $Websom_Config['Document_root']);
@@ -68,13 +93,36 @@ function Websom_Reload_Config() {
 	return $Websom_Config;
 }
 
-
+/**
+* \ingroup Globals
+* The static global Websom class contains information about the website and websom.
+* 
+* 
+*/
 class Websom {
+	/**
+	* This is the parsed Websom config file structured in a key/value array.
+	*/
 	public static $Config;
+	
+	/**
+	* An array of modules that are loaded.
+	*/
 	public static $Modules;
+	
+	/**
+	* The websom version.
+	*/
 	public static $Version;
+	
+	/**
+	* If the website is live. True or false.
+	*/
 	public static $Live;
 	
+	/**
+	* Returns an array like this(["status" => true or false, "info" => the module info array]) if the Module was found or false if not.
+	*/
 	public static function Module($name) {
 		if (isset(Websom::$Modules[$name])) return Websom::$Modules[$name];
 		return false;
@@ -83,11 +131,11 @@ class Websom {
 
 Websom::$Modules = [];
 Websom::$Config = Websom_Reload_Config();
+Str::init();
 Websom::$Version = '1.5';
 Websom::$Live = (Websom::$Config['live'] == "yes" ? true : false);
 
-//Start session\\ 
-session_start();
+//Session start moved to the Session core.
 
 //For stopping the page echo\\
 $DoNotRender = false;
@@ -100,11 +148,6 @@ $_IncludeResources = false;
 *
 * <div class="warning">If the page is Canceled then the structuring, css and js will not be included. This means no Canceling forms or other js dependant features.</div>
 * 
-* Information:
-* 	- Return: void
-* 	- Author: Echorial
-* 	- Date: Unkown
-* 	- Version: 1.0
 */
 function Cancel($Html = '', $keepResources = false){
 	global $DoNotRender, $_IncludeResources;
@@ -128,11 +171,6 @@ function Render(){
 *
 * <div class="warning">If the error is fatal it will display the error and die.</div>
 * 
-* Information:
-* 	- Return: string
-* 	- Author: Echorial
-* 	- Date: Unkown
-* 	- Version: 1.0
 */
 function Error($type, $msg, $fatal = false){
 	$msg = '['.$type.' Error]: '.$msg;
@@ -177,26 +215,6 @@ function CallFunctionArgs($Name, $Args = array()){
 function Wait($time) {
 	sleep($time);
 }
-/**
-* \ingroup PageFunctions
-* Use this to send mail.
-*
-* <div class="note">In the future this will notice if the server is in dev mode and rather than send real email, simply add it to a sent mail folder.</div>
-* 
-* Information:
-* 	- Return: void
-* 	- Author: Echorial
-* 	- Date: Unkown
-* 	- Version: 1.0
-*/
-function Send_Mail($to, $subject, $body, $extraHeaders = '') {
-$headers = "From: " . $NewsLetter['sender'] . "\r\n";
-$headers .= "Reply-To: ". $NewsLetter['sender'] . "\r\n";
-$headers .= "MIME-Version: 1.0\r\n";
-$headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
-$headers .= $extraHeaders;
-mail($to, $subject, $body, $headers);
-}
 
 /**
 * \defgroup Event Event
@@ -207,6 +225,7 @@ mail($to, $subject, $body, $headers);
 * 	- modulesLoaded: called when all modules are locked and loaded.
 * 	- resourcesLoad: called before Css and Js resouces are loaded.
 * 	- end: This is called at the end but before resources are included on the page, the page is sent, and more.
+*  - endAfter: This is called after the body of the page is loaded but before Properties are set.
 */
 
 $onEvents = array();
@@ -257,13 +276,17 @@ function callEvent($name, $args = array()) {
 
 
 
+include("Link.php");
+
+Linker::init();
+
 include("Responsive.php");
 
 include("Element.php");
 
 include("Javascript.php");
 
-include("Hookable.php");
+
 
 include("Resource.php");
 

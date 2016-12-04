@@ -70,9 +70,9 @@ class Element {
 		if ($value === null) {
 			if (!isset($this->identity['attr'][$name])) return null;
 			return $this->identity['attr'][$name];
-		}
-		else
+		}else {
 			$this->identity['attr'][$name] = $value;
+		}
 	}
 	
 	public function hasAttr($name) {
@@ -150,7 +150,8 @@ class Element {
 					return $e;
 			}
 		}
-		return false;
+		$rtn = new Element("null");
+		return $rtn;
 	}
 	
 	public function addClass($class) {
@@ -215,6 +216,9 @@ class Element {
 				$str .= $subElem;
 				continue;
 			}
+			
+			if (gettype($subElem) !== "object")
+				throw new Exception("Cannot stringify non element of type ".gettype($subElem).". In element ".$elem->identity["type"]."(".self::attributer($elem->identity['attr']).")");
 			
 			if (get_class($subElem) === 'Element') {
 				$str .= self::stringify($subElem);

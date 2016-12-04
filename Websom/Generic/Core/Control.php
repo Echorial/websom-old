@@ -9,11 +9,31 @@
 * \brief This is the template class for all 'Controls'.
 *
 * To create custom controls you would simply extend the Control class and override the needed methods.
+* 
+* Events:
+* 	- "edit"(mixed $data(The control value after Control::to is called): This is called after a row is edited.
+* 	- "create"(mixed $data(The control value after Control::to is called): This is called after the row is created and .
+* 
 */
-class Control {
+class Control extends Hookable {
 	public $Is_Control = true;
 	public $owner = "None";
 	public $name = "Untitled_Control";
+	
+	/**
+	* The parent Control_Structure
+	*/
+	public $cs;
+	
+	/**
+	* If true this control will edit the row.
+	*/
+	public $_action_edit = true;
+	/**
+	* If true this control will insert a value into the row.
+	*/
+	public $_action_create = true;
+	//public $_action_sort = true;
 	
 	/**
 	* This is called when the Control_Structure is storing the value into a table.
@@ -55,6 +75,16 @@ class Control {
 	public function load($controlValue) {
 		$newControlValue = $controlValue;
 		return $newControlValue;
+	}
+	
+	/**
+	* Override this to validate a value. Return true if its ok, or return an error string if not.
+	* 
+	* @param $value The value that needs to be validated.
+	* @param $oldValue If the control is being used in an edit the stored value of the column will be pased.
+	*/
+	public function validate($value, $oldValue = null) {
+		return true;
 	}
 }
 ?>

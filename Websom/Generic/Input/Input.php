@@ -249,10 +249,50 @@ class InputController {
 	
 	
 	
-	static function get_post ($form) {
+	static function get_post_and_message ($form) {
 		if (!isset($_POST)) return false;
 		if (!isset($_POST['inputPost'])) return false;
+		if ($form->name !== $_POST['inputPost_Form']) return false;
 		
+		$errors = [];
+		
+		$data = [];
+		
+		foreach ($form->inputs as $input) {
+			//Check if input sent from the client exists.
+			if (isset($_POST['inputPost'][$form->name.'__'.$input['n']])) {
+				//Deserialize the input from the client and store it.
+				$data[$input['n']] = $input['i']->receive($_POST['inputPost'][$form->name.'__'.$input['n']]);
+				//Validate the input on the server.
+				$error = $input['i']->validate_server($data[$input['n']]);
+				if ($error !== true) {
+					$errors[$form->name.'__'.$input['n']] = $error;
+				}
+			}
+		}
+		
+		return [$data, $errors];
+	}
+	
+	static function get_post ($form, LateCall $sendMessages = null) {
+		$de = self::get_post_and_message($form);
+		
+		if ($de === false) return false;
+		
+		LateCall::inject($sendMessages, function () use ($de, $form) {
+			if (count($de[1]) != 0) {
+				self::send_error_messages($form, $de[0], $de[1]);
+				return false;
+			}
+			
+			self::send_success_messages($form, $de[0]);
+		});
+		
+		return $de[0];
+		
+		/* Remove after approved 11/29/16
+		if (!isset($_POST)) return false;
+		if (!isset($_POST['inputPost'])) return false;
 		if ($form->name !== $_POST['inputPost_Form']) return false;
 		
 		$errors = [];
@@ -276,22 +316,36 @@ class InputController {
 		
 		if (count($errors) != 0) {
 			
-			$m = $form->event("error", [$data]);
-			if(get_class($m) !== "Message") throw new Exception("onFailure must return a Message object.");
+			$m = $form->event("error", [$data], false);
+			if(get_class($m) !== "Message") throw new Exception("error event must return a Message object.");
+			
 			Cancel('{"serverMsg": 0, "msg": '.json_encode($errors).', "actions": '.$m->get().'}');
 			return false;
 		}
 		
-		$m = $form->event("success", [$data]);
+		$m = $form->event("success", [$data], false);
 		if(get_class($m) !== "Message") throw new Exception("onSuccess must return a Message object.");
 		Cancel('{"serverMsg": 1, "actions": '.$m->get().'}');
 		return $data;
+		*/
+	}
+	
+	static function send_success_messages($form, $data) {
+		$m = $form->event("success", [$data], false);
+		if(get_class($m) !== "Message") throw new Exception("success event must return a Message object.");
+		Cancel('{"serverMsg": 1, "actions": '.$m->get().'}');	
+	}
+	
+	static function send_error_messages($form, $data, $errors) {
+		$m = $form->event("error", [$data], false);
+		if (get_class($m) !== "Message") throw new Exception("error event must return a Message object.");
 		
+		Cancel('{"serverMsg": 0, "msg": '.json_encode($errors).', "actions": '.$m->get().'}');
 	}
 	
 }
 
-onEvent('end', function () {
+onEvent('endAfter', function () {
 	
 	$values = [];
 	
@@ -622,7 +676,13 @@ class Input_Group extends Input {
 	}
 }
 
-
+/**
+* \ingroup BuiltInInputs
+* 
+* The Input_List is a simple input that can hold a template of inputs and let the user add more to it.
+* 
+* 
+*/
 class Input_List extends Input {
 	
 	public $listStructure = false;
@@ -634,6 +694,9 @@ class Input_List extends Input {
 		$this->inputs = [];
 	}
 	
+	/**
+	* Add an input to the list template.
+	*/
 	function addInput($name, $input) {
 		array_push($this->inputs, ['n' => $name, 'i' => $input]);
 	}
@@ -709,7 +772,7 @@ class Input_List extends Input {
 	
 	function receive($data) {
 		$rtn = [];
-		if ($data === 0) $data = []; //Client sends 0 if the array is empty.
+		if ($data === "0") $data = []; //Client sends 0 if the array is empty.
 		foreach ($data as $item) {
 			$cItem = [];
 			$sIndex = 0;
@@ -722,7 +785,7 @@ class Input_List extends Input {
 				if ($error !== true) {
 					return "Input error at ".$sIndex.':'.$iName.' "'.json_encode($error).'"';
 				}
-				$sIndext++;
+				$sIndex++;
 			}
 			array_push($rtn, $cItem);
 		}
@@ -790,6 +853,7 @@ class Input_List extends Input {
 				
 				
 				Websform.build.callInput({events: false, globalName: input.attr("listgn")}, "init")(input[0], input.attr("id"));
+				
 				if (isset(data))
 				if (input.attr("listn") in data) {
 					Websform.build.callInput({events: false, globalName: input.attr("listgn")}, "load")(input[0], data[input.attr("listn")]);
@@ -898,6 +962,13 @@ class Structure {
 	}
 	
 	/**
+	* Appends the $stuff to the end of the structure html string.
+	*/
+	public function inject($stuff) {
+		$this->html .= $stuff;
+	}
+	
+	/**
 	* This will replace all the %key%'s in the Structure html with the associated $data value.
 	*
 	* \param string $data The associative array to use.
@@ -905,8 +976,9 @@ class Structure {
 	function get($data) {
 		$rtn = $this->html;
 		
-		foreach ($data as $key => $value)
+		foreach ($data as $key => $value) {
 			$rtn = str_replace('%'.$key.'%', $value, $rtn);
+		}
 		return $rtn;
 	}
 }
@@ -974,6 +1046,18 @@ class Message {
 	}
 	
 	/**
+	* For creating quick errors.
+	*/
+	static public function QuickError($errorText, $duration = 10) {
+		$m = new Message();
+		$e = Theme::container("", "QuickError");
+		$e->insert($errorText);
+		Theme::tell($e, 4, "QuickError");
+		$m->add("form", Message::Error($e->get(), $duration));
+		return $m;
+	}
+	
+	/**
 	* This will return a formated action for use with Message->Add().
 	*
 	* \param string $actionName The name of the action to use.
@@ -1009,6 +1093,10 @@ class Message {
 class Form extends Hookable {
 	static public $InputCount = 0;
 	
+	/**
+	* 
+	* You should override this with a Structure object if you wish to customize the layout of the form html.
+	*/
 	public $structure = false;
 	public $loadData = false;
 	
@@ -1016,23 +1104,62 @@ class Form extends Hookable {
 	
 	public $clientEvents = [];
 	
+	/**
+	* This will construct the Form object and set the name.
+	* 
+	* @param string $name The form name. Try to make this unique.
+	* 
+	*/
 	function __construct($name) {
 		$this->name = 'global__'.'forms__'.$name;
 		$this->inputs = [];
 		
-		$this->on("success", function ($data) {
-			$m = new Message();
-			$m->add("form", Message::Success("Success"));
-			return $m;
-		});
+		$this->client("submit", "
+			$(event.\$form).find('.input_error').remove();
+		");
+		
+		$this->client("post", "
+			if (event.data === false) return;
+			$(event.\$form).append('<div class=\"loading\">".Theme::loader("Form.wait")->get()."</div>');
+			$(event.\$form).find('input[type=submit]').addClass('disabled').attr('disabled', 'disabled');
+		");
+		
+		$this->client("receive", "
+			$(event.\$form).children('.loading').remove();
+			$(event.\$form).find('input[type=submit]').removeClass('disabled').removeAttr('disabled');
+			$(event.\$form).children('.error, .success').hide(function () {
+				$(this).remove();
+			}, 5000);
+		");
+				
+		$this->client("inputError", "$(event.\$error).fadeOut(100);$(event.\$error).addClass('input_error');$(event.\$error).fadeIn(100);");
 		
 		$this->on("error", function ($data) {
 			$m = new Message();
-			$m->add("form", Message::Error("Error"));
+			$e = Theme::container("", "Form.error");
+			$e->insert("Error");
+			Theme::tell($e, 4, "Form.error");
+			$m->add("form", Message::Error($e->get()));
+			return $m;
+		});
+
+		$this->on("success", function ($data) {
+			$m = new Message();
+			$e = Theme::container("", "Form.success");
+			$e->insert("Success");
+			Theme::tell($e, 1, "Form.success");
+			$m->add("form", Message::Success($e->get()));
 			return $m;
 		});
 	}
 	
+	/**
+	* Adds an input instance to the form structure.
+	* 
+	* @param string $name The input reference name. Used in structure like so %the name%
+	* @param Input $input An instance of a `Input` based class.
+	* 
+	*/
 	function addInput($name, $input) {
 		array_push($this->inputs, ['n' => $name, 'i' => $input]);
 		
@@ -1047,14 +1174,54 @@ class Form extends Hookable {
 		$this->clientEvents[$event] = $javascript;
 	}
 	
+	
+	/**
+	* Loads a key/value array into the form
+	*/
 	function load($data) {
 		$this->loadData = $data;
 	}
 	
-	function check() {
-		return InputController::get_post($this);
+	/**
+	* Checks if the form has been submited.
+	* 
+	* @return false if no data was sent or a key/value array with input names as the key and input values as the value.
+	*/
+	function check(LateCall $sendMessages = null) {
+		return InputController::get_post($this, $sendMessages);
 	}
 	
+	/**
+	* Checks form but does not send any messages. Returns errors as well.
+	* Note: use \code if (count($errors > 0)) {echo "Had an error";} \endcode to check for errors.
+	* 
+	* @return array of [inputData[inputName, inputValue], errors[]] or false if this form was not submited.
+	*/
+	function rawCheck() {
+		return InputController::get_post_and_message($this);
+	}
+	
+	/**
+	* This sends the error or success message(s) based on the $errors param
+	* 
+	* @param array $data The data to send to the error/success event.
+	* @param array $errors The error array to check against.
+	* 
+	* @return bool If a success message was sent this is true, or false if error.
+	*/
+	function sendMessages($data, $errors) {
+		if (count($errors) != 0) {
+			InputController::send_error_messages($this, $data, $errors);
+			return false;
+		}
+		
+		InputController::send_success_messages($this, $data);
+		return true;
+	}
+	
+	/**
+	* This will return a html string for displaying the form on a webpage.
+	*/
 	function get() {
 		if (!$this->structure) {
 			$s = '';
@@ -1072,6 +1239,14 @@ class Form extends Hookable {
 
 
 
+
+class Action_Remove extends Action {
+	public $name = "Remove";
+	
+	function javascript() {
+		return '$(element).slideUp(function() {$(this).remove();});';
+	}
+}
 
 class Action_Success extends Action {
 	public $name = "Success";
@@ -1108,69 +1283,9 @@ class Action_Error extends Action {
 onEvent("ready", function () {
 	Register_Action(new Action_Success());
 	Register_Action(new Action_Error());
+	Register_Action(new Action_Remove());
 });
 
-/**
-*
-*/
-function GetSomeForm() {
-	$form = new Form('testForm');
-	
-	
-	$txt = new Text();
-	$txt->blank = true;
-	
-	$txt->max = 10;
-	$txt->min = 2;
-	
-	$form->addInput("Register", $txt);
 
-	
-	
-	
-	$nameList = new Input_Group();
-		$nameList->addInput("firstName", $txt);
-		$nameList->addInput("lastName", $txt);
-		$nameList->structure = new Structure(
-			'<div class="list"><div>%firstName%</div><div>%lastName%</div></div>'
-		);
-	
-	$nameLister = new Input_List();
-		$nameLister->addInput("list", $nameList);
-
-		$nameLister->listStructure = new Structure(
-			'<div class="list"><div>%list%</div><button listremove>Remove</button></div>'
-		);
-	
-	$form->addInput("nameLister", $nameLister);
-	
-	
-	$form->structure = new Structure(
-		'<div>Your name: %Register%</div>%nameLister%<div>%Submit%</div>'.(Theme::input_submit("Send", "formSubmit")->get())
-	);
-	
-	$form->on("error", function ($data) {
-		$m = new Message();
-		$m->add("form", Message::Error("Please fix errors"));
-		return $m;
-	});
-	
-	$form->on("success", function ($data) {
-		Storage::Set("tempar", $data);
-		$m = new Message();
-		
-		$m->add("form", Message::Success("Got input ".json_encode($data)."."));
-		
-		return $m;
-	});
-	
-	$form->load(
-		json_decode('{"Register":"dssd","nameLister":[{"list":{"firstName":"gdsh","lastName":"sdhsd"}},{"list":{"firstName":"ads","lastName":"hsdh"}}]}')
-	);
-	
-	$form->check();
-	
-	return $form->get();
-}
 
 ?>

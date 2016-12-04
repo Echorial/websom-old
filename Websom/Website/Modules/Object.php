@@ -311,6 +311,7 @@ function Quick_Find($findsArray){
 class Data_Builder {
 	public $types = '';
 	public $values = array();
+	
 	/**
 	* This will add the column, value pair to the builder.
 	*
@@ -357,6 +358,7 @@ class Data_Builder {
 		$q1 = $t1;
 		$q2 = $t1;
 		$vals = array();
+		
 		foreach ($this->values as $key => $value) {
 			if ($type == 0) {
 				$q1 .= '`'.$this->values[$key][0].'`, ';
@@ -371,6 +373,39 @@ class Data_Builder {
 		if ($type == 0) $q2 = 'VALUES'.$q2;
 		return array(array_merge(array($this->types), $vals), $q1.' '.$q2);
 	}
+		/*
+	*	public function getPrepared($type = 0, $template = false) {
+		$t1 = '(';
+		$t2 = ')';
+		if ($type == 1){
+			$t1 = '';
+			$t2 = '';
+		}
+		$q1 = $t1;
+		$q2 = $t1;
+		$vals = array();
+		$valu = $this->values;
+		if ($template !== false) {
+			foreach($template as $k => &$v) {
+				array_push($valu, [$k, $v]);
+			}
+		}
+		
+		foreach ($this->values as $key => $value) {
+			if ($type == 0) {
+				$q1 .= '`'.$valu[$key][0].'`, ';
+				$q2 .= '?, ';
+			}else{
+				$q1 .= '`'.$valu[$key][0].'` = ?, ';
+			}
+			$vals[$key] = &$valu[$key][1];
+		}
+		$q1 = rtrim($q1, ', ').$t2;
+		$q2 = rtrim($q2, ', ').$t2;
+		if ($type == 0) $q2 = 'VALUES'.$q2;
+		return array(array_merge(array($this->types), $vals), $q1.' '.$q2);
+	}
+	*/
 }
 
 /**
@@ -391,9 +426,10 @@ function Data_Select ($table, $finder, $selects = '*') {
 	
 	$query = $find[1];
 	$query = 'SELECT '.$finder->columns.' FROM '.$table.' '.$query;
+	
 	if ($prepared = $Connection['Select']->prepare($query)) {
 	}else{
-		echo Error('Data', $Connection['Select']->error);
+		echo Error('Data', $Connection['Select']->error, true);
 		return false;
 	}
 
@@ -492,7 +528,7 @@ function Data_Delete($tableName, $finder) {
 	$delete = $finder->getPrepared();
 	
 	$query = 'DELETE FROM `'.$tableName.'` '.$delete[1];
-
+	
 	if ($prepared = $Connection['Remove']->prepare($query)) {
 	}else{
 		echo Error('Data', $Connection['Remove']->error);
@@ -1382,14 +1418,105 @@ class Search extends Control {
 	public $params;
 	public $sep = '';
 	function get(){
-		$c = $this->params;
-		$c['type'] = 'text';
-		return $c;
+		$inp = new Text();
+		
+		$inp->blank = true;
+		$inp->character_max = 256;
+		$inp->placeholder = "Search";
+		
+		return $inp;
 	}
+	
+	function filter($val, &$finder, $name) {
+		$finder->where($this->sep, $name, "LIKE", "%".$val."%");
+	}
+	
 	function data_sort($value, $column) {
 		$finder = new Data_Finder();
 		$finder->where($this->sep, $column, 'LIKE', '%'.$value.'%');
 		return $finder;
+	}
+}
+
+
+class Input_Button extends Input {
+	public $globalName = 'Button';
+	
+	public $label = "";
+	public $text = "Submit";
+	
+	function __construct($text = "Submit") {
+		$this->text = $text;
+	}
+	
+	function get() {
+		$e = Theme::button($this->text, $this->label);
+		
+		$e->attr("id", $this->id);
+		$e->attr("isinput", "");
+		
+		//$html = '<input isinput id="'.$this->id.'" blank="'.($this->blank ? 1:0).'" count="'.$this->min.' '.$this->max.'" not="'.$this->not.'" only="'.$this->only.'" name="'.$meta['name'].'" type="text" placeholder="Text"></input>';
+		
+		return $e->get();
+	}
+	
+	function send() {
+		return '
+		return ($(element).attr("data-submited") == "1" ? "true" : "false");
+		';
+	}
+	
+	function validate_client() {
+		return "return true";
+	}
+	
+	function validate_server($data) {
+		return true;
+	}
+	
+	function init() {
+		return "$(element).attr('data-submited', '0'); $(element).on('click', function () {
+			$(this).attr('data-submited', '1');
+			$(this).closest('websform').trigger('submit');
+		});";
+	}
+	
+	function error() {
+		return "
+			return $('<div>'+error+'</div>').insertAfter(element);
+		";
+	}
+	
+	function receive($data) {
+		if ($data === "true")
+			return true;
+		
+		return false;
+	}
+	
+	function load() {
+		return "";
+	}
+}
+
+class Button extends Control {
+	public $text = "Button";
+	
+	public $label = "";
+	
+	function __construct($text = "Button") {
+		$this->text = $text;
+	}
+	
+	function get() {
+		$inp = new Input_Button($this->text);
+		$inp->label = $this->label;
+		
+		return $inp;
+	}
+	
+	function validate($value, $oldValue = false) {
+		return true;
 	}
 }
 
@@ -1563,7 +1690,6 @@ class Object_Sort_Listener extends Action {
 	
 	function javascript () {
 		return '
-		
 		var parent = $(element).closest(".Object_Sort_Wrap");
 		var viewer = parent.find(".Object_Sort_View");
 		
@@ -1574,7 +1700,81 @@ class Object_Sort_Listener extends Action {
 
 
 
+class Control_Structure_View_Edit extends Responsive {
+	function javascript() {
+		return '
+		$(document).on("click", "[EditSort]", function () {
+			$elem = $(this).closest(".Control_Structure_View_Edit");
+			respond({a: parseInt($elem.attr("data-edit-instance")), i: parseInt($elem.attr("data-edit-index"))}, function (data) {
+				if ("err" in data)
+					return;
+				
+				var checkId = "Editing_"+$elem.attr("data-edit-instance");
+				
+				var Object_mkFormInIt = function () {
+					var container = $("<div></div>");
+					var html = data["html"];
+					container.attr("id", checkId);
+					container.attr("data-edit-index", $elem.attr("data-edit-index"));
+					container.hide();
+					container.append(html);
+					container.insertAfter($elem);
+					CallEventHook("themeReload", container);
+					window.Websom.Input.buildForms(container);
+					container.slideDown("fast");
+				}
+				
+				if ($("#"+checkId).length > 0) {
+					$("#"+checkId).slideUp("fast",  function () {
+						if ($("#"+checkId).attr("data-edit-index") == $elem.attr("data-edit-index")){
+							$(this).remove();
+							return;
+						}else{
+							$(this).remove();
+							Object_mkFormInIt();
+						}
+					});
+					
+				}else{
+					Object_mkFormInIt();
+				}
+			});
+		});';
+	}
+	
+	function response($data) {
+		$inst = Control_Structure::getInstance($data["a"]);
+		if ($inst === false)
+			return ["err"=>"invalid instance"];
+		
+		if ($inst->sortEditForm === false)
+			return ["err"=>"invalid instance"];
+		
+		$found = Data_Select($inst->table, Quick_Find([["id", "=", $data["i"]]]));
+		
+		if (count($found) == 0)
+			return ["err"=>"invalid instance"];
+		
+		$dtd = ["cs_doNotDoAnything_id" => $data["i"]];
+		foreach ($inst->options["edits"] as $col => $d) {
+			$d->cs = $this;
+			if ($d->_action_edit) {
+				$dtd[$col] = $d->from($found[0][$col]);
+			}else{
+				$dtd[$col] = $d->from(false);
+			}
+		}
+		$inst->sortEditForm->load($dtd);
+		
+		
+		return ["html" => $inst->sortEditForm->get()];
+	}
+}
 
+
+onEvent("ready", function () {
+	Responsive_Once(new Control_Structure_View_Edit());
+});
 
 
 /**
@@ -1597,8 +1797,8 @@ class Object_Sort_Listener extends Action {
 */
 class Control_Structure extends Hookable {
 	private $controls = [];
-	private $options = [];
-	private $table = "";
+	public $options = [];
+	public $table = "";
 	
 	/**
 	* Use this to delay operations in seconds.
@@ -1607,7 +1807,26 @@ class Control_Structure extends Hookable {
 	
 	public $structure = false;
 	
+	public $index = 0;
+	
+	public $errorMsg = "";
+	
 	static private $count = 0;
+	
+	static public $instances = [];
+	
+	/**
+	* Hard coded for sort editing.
+	*/
+	public $sortEditForm = false;
+	
+	static public function &getInstance($id) {
+		foreach (self::$instances as $inst) {
+			if ($inst->index == $id)
+				return $inst;
+		}
+		return false;
+	}
 	
 	/**
 	* \param array $options The options are structured like so ["type" => "create", "table" => "myTable"]
@@ -1619,22 +1838,28 @@ class Control_Structure extends Hookable {
 	* Types:
 	* 	- c: This type will create a new row with the provided column and control pairs. <br>
 	* 		Events:
-	* 			- "create"($index, $data): When the client creates a new row. Params: index(The id for the new row), data(the new data)
+	* 			- "create"($data): When the client creates a new row. Params: index(The id for the new row), data(the new data). Return false to cancel the row insertion.
+	* 			- "builder"($builder, $data): This will pass a reference to the builder used in the row creation.
+	* 			- "insert"($index(The new row index if any)): After the row is inserted.
 	* 	- e: This will load the row with the `id`(put the id in the options. "id" => 123), then allow the client to edit and save to the same row. <br>
 	* 		Options:
 	* 			- integer "id": Id of the row to edit.
-	* 		<br>
 	* 		Events:
-	* 			- "edit"($data): When the client edits a row. Params: data(the new data), Return false to cancel the edit.
+	* 			- "edit"($data, $oldData): When the client edits a row. Params: data(the new data), Return false to cancel the edit.
 	* 	- s: This will create a sortable html element with the column/control pairs soring the view.
 	* 		Options:
 	* 			- Structure "areaStructure": A Structure object that goes around the control area and view area. Variables %sort%, %view%
 	* 			- boolean "viewOnStart": If view area should show results at the start.
-	* 			- View "view"(Required): The view object that will be used to display the sorted rows. Note: Only the sub() method is used on the view.
+	*  		- View "view"(Required): The view object that will be used to display the sorted rows. Note: Only the sub() method is used on the view.
+	*  		- array "edits": Set this to an array ["column name", some control instance] to add editing to each sub view.
+	*  		- Structure "editStructure": The structure that will be used if "edits" is set.
+	*  		- boolean "canDelete": If the user can delete the row. Note: Only works when editing is enabled. Note: Make sure to insert %cs_delete% into the edit structure if you want the button to show.
+	*  		- string "deleteText": The delete button text.
 	* 		Events:
 	* 			- "sortData"($data): This is called before the viewer creates a finder to find the data. Return the modified $data object.
 	* 			- "sortFinder"(&$finder): This is called with a reference to a finder. You can add or modify the finder.
-	* 	- p: Plain input.
+	* 			- "edit"($data, $oldData): When the client edits a row. Params: data(the new data). 
+	* 			- "delete"($rowData): When the client deletes a row. Return false to cancel the delete.
 	*
 	*/
 	public function __construct($options) {
@@ -1645,26 +1870,42 @@ class Control_Structure extends Hookable {
 		
 		$this->options = $options;
 		
+		$this->client("submit", "
+			$(event.\$form).find('.input_error').remove();
+		");
 		
-				
+		$this->client("post", "
+			if (event.data === false) return;
+			$(event.\$form).append('<div class=\"loading\">".Theme::loader("Form.wait")->get()."</div>');
+			$(event.\$form).find('input[type=submit]').addClass('disabled').attr('disabled', 'disabled');
+		");
+		
+		$this->client("receive", "
+			$(event.\$form).children('.loading').remove();
+			$(event.\$form).find('input[type=submit]').removeClass('disabled').removeAttr('disabled');
+			$(event.\$form).children('.error, .success').hide(function () {
+				$(this).remove();
+			}, 5000);
+		");
+		
+		$this->client("inputError", "$(event.\$error).fadeOut(100);$(event.\$error).addClass('input_error');$(event.\$error).fadeIn(100);");
+		
+		$this->on("error", function ($data, $msg) {
+			$m = new Message();
+			$e = Theme::container("", "Form.error");
+			$e->insert("Error: ".$msg);
+			Theme::tell($e, 4, "Form.error");
+			$m->add("form", Message::Error($e->get()));
+			return $m;
+		});
+		
 		$this->on("success", function ($data) {
 			$m = new Message();
-			$m->add("form", Message::Success("Success"));
+			$e = Theme::container("", "Form.success");
+			$e->insert("Success");
+			Theme::tell($e, 1, "Form.success");
+			$m->add("form", Message::Success($e->get()));
 			return $m;
-		});
-		
-		$this->on("error", function ($data) {
-			$m = new Message();
-			$m->add("form", Message::Error("Error"));
-			return $m;
-		});
-		
-		$this->on("create", function ($index, $data) {
-			
-		});
-		
-		$this->on("edit", function ($data) {
-			return true;
 		});
 		
 		$this->on("sortData", function ($data) {
@@ -1675,6 +1916,10 @@ class Control_Structure extends Hookable {
 			
 		});
 		
+		$this->index = self::$count;
+		self::$count++;
+		
+		array_push(self::$instances, $this);
 	}
 	
 	public $clientEvents = [];
@@ -1684,6 +1929,7 @@ class Control_Structure extends Hookable {
 	}
 	
 	public function addControl($name, $control) {
+		$control->cs = $this;
 		array_push($this->controls, ['n' => $name, 'c' => $control]);
 	}
 	
@@ -1691,33 +1937,46 @@ class Control_Structure extends Hookable {
 		
 	}
 	
+	public function event_error ($data) {
+			return $this->event("error", [$data, $this->errorMsg], false);
+		}
+	
+	public function event_success($data) {
+		if ($this->errorMsg == "") {
+			return $this->event("success", [$data], false);
+		}else{
+			return $this->event("error", [$data, $this->errorMsg], false);
+		}
+	}
+	
+	/**
+	* This will check and get the form html.
+	* 
+	* @return string The html form.
+	*/
 	public function get() {
 		if ($this->options["type"] == 's')
 			return $this->get_sort();
 		
-		self::$count++;
-		$f = new Form("Object_Form_".self::$count);
+		//Create edit and create form
+		$f = new Form("Object_Form_".$this->index);
 		
 		$f->clientEvents = $this->clientEvents;
 		
-		$f->on("success", function ($data) {
-			return $this->event("success", [$data]);
-		});
+		//Setup events
+		$f->on("success", [$this, "event_success"]);
 		
-		$f->on("error", function ($data) {
-			return $this->event("error", [$data]);
-		});
-		
-		
+		$f->on("error", [$this, "event_error"]);
 		
 		$sendStructure = $this->structure;
 	
 		$editLoads = [];
 		
+		//Add controls to form.
 		foreach ($this->controls as $c) {
 			$f->addInput($c['n']."_con", $c['c']->get());
-			
-			array_push($editLoads, $c['n']);
+			if ($c['c']->_action_edit)
+				array_push($editLoads, $c['n']);
 			
 			if ($sendStructure !== false) {
 				$sendStructure->html = str_replace('%'.$c['n'].'%', '%'.$c['n'].'_con%', $sendStructure->html);
@@ -1728,14 +1987,19 @@ class Control_Structure extends Hookable {
 		
 		if ($this->options['type'] == 'e') {
 			if (!isset($this->options["id"])) throw new Exception("No id provided in Control_Structure edit operation");
-			
-			$find = new Data_Finder(false, implode(", ", $editLoads));
+			$colsTG = implode(", ", $editLoads);
+			if ($colsTG == "") $colsTG = "*";
+			$find = new Data_Finder(false, $colsTG);
 			$find->where("", "id", "=", $this->options["id"]);
 			$row = Data_Select($this->table, $find);
 			
-			foreach ($row[0] as $k => $v) {
-				$row[0][$k."_con"] = $this->getControl($k)->from($row[0][$k]);
-				unset($row[0][$k]);
+			foreach ($this->controls as $k) {
+				if ($k['c']->_action_edit) {
+					$row[0][$k['n']."_con"] = $k['c']->from($row[0][$k['n']]);
+					unset($row[0][$k['n']]);
+				}else{
+					$row[0][$k['n']."_con"] = $k['c']->from(false);
+				}
 			}
 			
 			if (count($row) > 0) {
@@ -1743,7 +2007,9 @@ class Control_Structure extends Hookable {
 			}
 		}
 		
-		$rtn = $f->check();
+		$lc = new LateCall();
+		
+		$rtn = $f->check($lc);
 		if ($rtn !== false) {
 			Wait($this->delay);
 			$get = false;
@@ -1755,34 +2021,63 @@ class Control_Structure extends Hookable {
 					$get = $this->get_edit($rtn, $f);
 					break;
 			}
-			
-			return $get;
+			if ($get !== true) {
+				$this->errorMsg = $get;
+				$lc->invoke();
+				return false;
+			}else{
+				$lc->invoke();
+				return true;
+			}
 		}
 		
+		
+		
 		return $f->get();
+	}
+	
+	///\cond
+	
+	public function callControls($eventName, $values, $controls = false) {
+		if ($controls === false) {
+			foreach ($this->controls as $c) {
+				if (array_key_exists($c['n'], $values))
+					$c['c']->event($eventName, [$values[$c['n']], $this], false);
+			}
+		}else{
+			foreach ($controls as $n => $c) {
+				$c->event($eventName, [$values[$n], $this], false);
+			}
+		}
 	}
 	
 	public function get_create($data, $form) {
 		$rtn = true;
 		
+		$noAction = [];
 		$b = new Data_Builder();
 		foreach ($this->controls as $c) {
 			$name = $c['n'].'_con';
 			if (!array_key_exists($name, $data)) continue;
-				$val = $data[$name];
-				
-				$err = $c['c']->validate($data[$name]);
-				if (!$err) {
-					$rtn = false;
-				}
-				
+			$val = $data[$name];
+			
+			$err = $c['c']->validate($data[$name]);
+			if ($err !== true) {
+				$rtn = $err;
+			}
+			if ($c['c']->_action_create) {
 				$b->add($c['n'], $c['c']->to($val));
+			}else{
+				$noAction[$c['n']] = $c['c']->to($val);
+			}
 		}
 		
-		if ($rtn) {
+		$this->event("builder", [$b, $data]);
+		
+		if ($rtn === true AND $this->event("create", [$b->arrayify()]) == false) {
 			$index = Data_Insert($this->table, $b);
-			
-			$this->event("create", [$index, $b->arrayify()]);
+			$this->event("insert", [$index]);
+			$this->callControls("create", $noAction);
 		}
 		
 		return $rtn;
@@ -1798,25 +2093,36 @@ class Control_Structure extends Hookable {
 	public function get_edit($data, $form) {
 		$rtn = true;
 		
-		
 		$f = Quick_Find([["id", "=", $this->options["id"]]]);
+		$found = Data_Select($this->table, $f);
 		
+		$noAction = [];
 		$b = new Data_Builder();
 		foreach ($this->controls as $c) {
 			$name = $c['n'].'_con';
 			if (!array_key_exists($name, $data)) continue;
 				$val = $data[$name];
-				
-				$err = $c['c']->validate($data[$name]);
-				if (!$err) {
-					$rtn = false;
+				$err;
+				if ($c['c']->_action_edit) {
+					$err = $c['c']->validate($data[$name], $found[0][$c['n']]);
+				}else{
+					$err = $c['c']->validate($data[$name], false);
+				}
+				if ($err !== true) {
+					$rtn = $err;
 				}
 				
-				$b->add($c['n'], $c['c']->to($val));
+				if ($c['c']->_action_edit) {
+					$b->add($c['n'], $c['c']->to($val));
+				}else{
+					$noAction[$c['n']] = $val;
+				}
 		}
-		
-		if ($rtn AND $this->event("edit", [$b->arrayify()]) !== false) {
-			Data_Update($this->table, $b, $f);
+		$arrify = $b->arrayify();
+		if ($rtn === true AND $this->event("edit", [$arrify, $found[0]]) == false) {
+			if (count($arrify) > 0)
+				Data_Update($this->table, $b, $f);
+			$this->callControls("edit", $noAction);
 		}
 		
 		return $rtn;
@@ -1824,7 +2130,7 @@ class Control_Structure extends Hookable {
 	
 	private function findSorted($data) {
 		$finder = new Data_Finder();
-		
+		$this->event("sortFinder", [&$finder], true);
 		$rtn = true;
 		foreach ($this->controls as $c) {
 			$name = $c['n'].'_con';
@@ -1832,9 +2138,9 @@ class Control_Structure extends Hookable {
 				$val = $data[$name];
 				
 				$err = $c['c']->validate($data[$name]);
-				if (!$err) {
-					$rtn = false;
-					return 'Error.';
+				if ($err !== true) {
+					$rtn = $err;
+					return 'Error: '.$rtn;
 				}
 				$c['c']->filter($val, $finder, $c['n']);
 		}
@@ -1843,24 +2149,130 @@ class Control_Structure extends Hookable {
 		
 		$html = "";
 		
-		foreach ($found as $row) {
-			$html .= $this->options["view"]->sub($row);
+		if (isset($this->options["edits"])) {
+			foreach ($found as $row) {
+				$html .= '<div class="Control_Structure_View_Edit" data-edit-instance="'.$this->index.'" data-edit-index="'.$row["id"].'">'.$this->options["view"]->sub($row).'</div>';
+			}
+		}else{
+			foreach ($found as $row) {
+				$html .= $this->options["view"]->sub($row);
+			}
 		}
 		
 		return $html;
 	}
 	
 	public function get_sort() {
+		if (isset($this->options["edits"])) {
+			$stHtml = "";
+			$editForm = new Form("Object_Form_".$this->index."_edit");
+			foreach ($this->options["edits"] as $col => $ed) {
+				$stHtml .= "%".$col."%<br>";
+				$editForm->addInput($col, $ed->get());
+			}
+			
+			if (isset($this->options["editStructure"])) {
+				$editForm->structure = $this->options["editStructure"];
+			}else{
+				$editForm->structure = new Structure(Theme::container($stHtml.Theme::input_submit("Save", "Control_Structure_Sort_Edit")->get(), "Control_Structure_Sort_Edit")->get());
+			}
+			
+			$editForm->addInput("cs_doNotDoAnything_id", new Text("number"));
+			
+			$injectString = "";
+			
+			if (isset($this->options["canDelete"]) AND $this->options["canDelete"]) {
+				$injectString = "%cs_delete%";
+				$txt = "Delete";
+				if (isset($this->options["deleteText"]))
+					$txt = $this->options["deleteText"];
+				$editForm->addInput("cs_delete", new Input_Button($txt));
+			}
+			
+			$editForm->structure->inject($injectString."<hiddenstuff style='display: none;'>%cs_doNotDoAnything_id%</hiddenstuff>");
+			
+			$this->sortEditForm = $editForm;
+			
+			$editForm->on("success", function ($data) {
+				$builder = new Data_Builder();
+				$noAction = [];
+				
+				$shouldDelete = false;
+				if (isset($data["cs_delete"]))
+					$shouldDelete = $data["cs_delete"];
+				
+				Storage::Set("cs_delete", $data["cs_delete"]);
+				
+				if (!isset($this->options["canDelete"]) OR !$this->options["canDelete"])
+					$shouldDelete = false;
+				
+				unset($data["cs_delete"]);
+				
+				$id = $data["cs_doNotDoAnything_id"];
+				unset($data["cs_doNotDoAnything_id"]);
+				
+				$cf = Quick_Find([["id", "=", $id]]);
+				$found = Data_Select($this->table, $cf);
+				
+				if (count($found) == 0) {
+					return Message::QuickError("Error: Did not edit.");
+				}
+				
+				if ($shouldDelete) {
+					$cancel = $this->event("delete", [$found[0]]);
+					
+					if (!$cancel) {
+						$didDelete = Data_Delete($this->table, $cf);
+						
+						if ($didDelete)	{
+							return Message::QuickError("Deleted");
+						}else{
+							return Message::QuickError("Error while deleting");
+						}
+					}
+				}
+				
+				$rtn = true;
+				foreach ($this->options["edits"] as $n => $c) {
+					$name = $n;
+					if (!array_key_exists($name, $data)) continue;
+						$val = $data[$name];
+					
+					$err = $c->validate($data[$name], $found[0][$name]);
+					if ($err !== true) {
+						$rtn = $err;
+					}
+					if ($c->_action_edit) {
+						$builder->add($n, $c->to($val));
+					}else{
+						$noAction[$n] = $c->to($val);
+					}
+				}
+				
+				if ($rtn !== true) {
+					return Message::QuickError("Error: ".$rtn);
+				}
+				
+				
+				if ($this->event("edit", [$builder->arrayify(), $found[0]]) == false) {
+					Data_Update($this->table, $builder, $cf);
+					$this->callControls("edit", $noAction, $this->options["edits"]);
+				}
+				
+				$m = new Message();
+				$m->add("form", Message::Action("Remove", []));
+				return $m;
+			});
+			$editForm->get();
+			$editForm->check();
+		}
 		
-		
-		
-		self::$count++;
-		$f = new Form("Object_Form_".self::$count);
+		$f = new Form("Object_Form_".$this->index);
 		
 		$f->clientEvents = $this->clientEvents;
 		
 		$f->on("success", function ($data) {
-			$m = $this->event("success", [$data]);
+			$m = $this->event("success", [$data], false);
 			
 			$html = $this->findSorted($data);
 			
@@ -1869,7 +2281,7 @@ class Control_Structure extends Hookable {
 		});
 		
 		$f->on("error", function ($data) {
-			return $this->event("error", [$data]);
+			return $this->event("error", [$data, ""], false);
 		});
 		
 		$sortStructure = $this->structure;
@@ -1910,8 +2322,17 @@ class Control_Structure extends Hookable {
 		
 		return "<div class='Object_Sort_Wrap'>".$html."</div>";
 	}
-	
+	///\endcond
 }
+
+
+
+
+
+
+
+
+
 
 
 ?>
