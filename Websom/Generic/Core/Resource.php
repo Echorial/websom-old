@@ -58,8 +58,8 @@ class Resources {
 	* \endcode
 	*
 	* The options in info are:
-	* 	- string path(optional): The local path at which the file is located.
-	* 	- string url(optional): The url where the file is located.
+	* 	- string path(required): The local path at which the file is located.
+	* 	- string external(default: false): If the path is an external url
 	* 	- string register(optional): The code or module that registered this resource.
 	* 	- string type(required): The type of resource. values: "javascript", "stylesheet"
 	* 	- integer index(default: 0): The z-index for when the resource will be included. Higher means closer to the top.
@@ -68,6 +68,17 @@ class Resources {
 	*
 	*/
 	public static function Register($info) {
+		if (!isset($info["external"]))
+			$info["external"] = false;
+		
+		if (!isset($info["index"]))
+			$info["index"] = 0;
+		
+		if (!isset($info["register"]))
+			$info["register"] = "none";
+		
+		
+		
 		array_push(self::$resourceList, self::checkIndex($info));
 	}
 	

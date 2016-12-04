@@ -249,12 +249,24 @@ function Reload_Modules() {
 				continue;
 			}
 			foreach ($tbls as $tableName => $tableColumns){
-				Structure_Create("m".$Id.'_'.$tableName, "`id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`) ".StructureColumns($tableColumns));
+				$strToIn = "";
+				if (!is_array($tableColumns)) {
+					$strToIn = "`id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`) , ".$tableColumns;
+				}else{
+					if ($tableColumns[1] == true) {
+						$strToIn = "`id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`) , ".$tableColumns[0];
+					}else{
+						$strToIn = $tableColumns[0];
+					}
+				}
+				Structure_Create("m".$Id.'_'.$tableName, $strToIn);
 				$msgs .= '\n Loaded '.$ModuleName.'.'.$tableName;
 			}
 			$msgs .= '\n [Loaded '.$ModuleName.']\n';
 		}
 	}
+	
+	callEvent("reload");
 	
 	return $msgs;
 }

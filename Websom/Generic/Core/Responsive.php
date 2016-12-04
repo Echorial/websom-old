@@ -18,7 +18,7 @@ $Responives = array();
 */
 function Get_Responsive ($responsive) {
 	global $Responives;
-	array_push($Responives, $responsive);
+	$Responives[get_class($responsive)] = $responsive;
 }
 
 /**
@@ -34,6 +34,12 @@ function Get_Responsive ($responsive) {
 */
 function Responsive_Included($response) {
 	global $Responives;
+	
+	if (isset($Responives[get_class($response)]))
+		return true;
+	return false;
+	
+	
 	foreach($Responives as $resp)
 		if ($response == get_class($resp)) return true;
 	return false;
@@ -58,12 +64,13 @@ function Responsive_Once($responsive) {
 /// \cond
 function Websom_Check_Responsive () {
 	global $Responives;
+	Storage::Set("gpast", false);
 	if (count($_POST) == 0) return false;
 	if (!isset($_POST['responiveid'])) return false;
-	if ($_POST['responiveid'] > count($Responives) OR $_POST['responiveid'] < 0) return false;
+	if (!isset($Responives[$_POST['responiveid']])) return false;
 	$__POST = $_POST;
 	unset($__POST['responiveid']);
-	$responseData = $Responives[$_POST['responiveid']-1]->response(json_decode(json_encode($__POST), true));
+	$responseData = $Responives[$_POST['responiveid']]->response(json_decode(json_encode($__POST), true));
 	$data = ['responsive_321_type' => false];
 	if (is_array($responseData)) {
 		$data = $responseData;
@@ -74,11 +81,11 @@ function Websom_Check_Responsive () {
 
 function Get_Responsive_Scripts() {
 	global $Responives;
-	$scripts = '<script>var responsives = [';
-	foreach ($Responives as $responsive) {
-		$scripts .= 'function (respond, response) {'.$responsive->javascript().'},';
+	$scripts = '<script>var responsives = {';
+	foreach ($Responives as $id => $responsive) {
+		$scripts .= $id.': function (respond, response) {'.$responsive->javascript().'},';
 	}
-	return rtrim($scripts, ',').'];</script>';
+	return rtrim($scripts, ',').'};</script>';
 }
 /// \endcond
 

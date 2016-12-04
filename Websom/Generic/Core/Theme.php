@@ -191,6 +191,11 @@ class Theme {
 		if (self::$theme !== false)
 		return self::$theme->input_submit($text, self::mergeRules(self::getRule('input_submit', $label), $options));
 	}
+	
+	static public function input_dictionary($params, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->input_dictionary($params, self::mergeRules(self::getRule('input_dictionary', $label), $options));
+	}
 
 	static public function loader($label, $options = []){
 		if (self::$theme !== false)
@@ -219,10 +224,25 @@ class Theme {
 		return self::$theme->tell($element, $level, self::mergeRules(self::getRule('tell', $label), $options));
 	}
 	
+	static public function chip($text, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->chip($text, self::mergeRules(self::getRule('chip', $label), $options));
+	}
+
+	static public function icon($name, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->icon($content, self::mergeRules(self::getRule('icon', $label), $options));
+	}
+
+	static public function navigation($content, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->navigation($content, self::mergeRules(self::getRule('navigation', $label), $options));
+	}
 	
-	
-	
-	
+	static public function navigation_link($text, $where, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->navigation_link($text, $where, self::mergeRules(self::getRule('navigation_link', $label), $options));
+	}
 	
 }
 
@@ -374,6 +394,14 @@ interface iTheme {
 	* 	- new(bool): If the badge alerts the user to something new.
 	*/
 	public function badge($content, $options);
+
+	/**
+	* Chip
+	*
+	* Options:
+	* 	- class(string): The class to apply to the chip
+	*/
+	public function chip($text, $options);
 	
 	/**
 	* List of content.
@@ -397,7 +425,9 @@ interface iTheme {
 	*	- get(): Returns the string within the text field.
 	*	- set(string value): Sets the string within the text field.
 	*	- element(): Returns the real input element.
-	*
+	* 
+	* Options:
+	* 	- "type": A string for the input type. Example("password", "text", "number", "multiline")
 	*/
 	public function input_text($value, $placeholder, $options);
 	
@@ -417,6 +447,7 @@ interface iTheme {
 	*	- default(string): The key to be selected at first.
 	*	- optionClass(string): The class to be applyed to each option.
 	*	- multiple(bool): If the user should be able to select multiple options.
+	* 	- type(string): The type of text box it is. (text, password, email, ect.)
 	*
 	*/
 	public function input_select($keyArray, $options);
@@ -519,6 +550,69 @@ interface iTheme {
 	public function input_submit($text, $options);
 	
 	/**
+	* Dictionary
+	*
+	* This is a simple key searching box that lets users input values and searches for those values in a javascript object.
+	* 
+	* Methods:  Server Prefix: input_
+	*	- get(): Returns an array of keys. Example: ["key1", "key2"]
+	*	- set(array): Sets the current keys to the array.
+	*	- element(): Returns the input text box.
+	*
+	* @param array $params This contains two options:
+	* 								  - source(required): A string that tells where the source is in the window. Example: "TagsForSource" will be looked for like so window["TagsForSource"]
+	*								  - subSource(optional): This is the extra sub object of the source object. Example: "subKey" will be looked for like so window["TagsForSource"]["subKey"]
+	*								  - placeholder(optional): The placeholder before keys are inputed.
+	*								  - extraPlaceholder(optional): The placeholder after keys are inputed.
+	* 
+	* Options:
+	* 	- class: The dictionary box class.
+	*/
+	public function input_dictionary($params, $options);
+	
+	/**
+	* Icon
+	* 
+	* Icon names should come from the Google material design icons(https://material.io/icons/)
+	* 
+	* This will return a simple icon element.
+	* @param string $name The name of the icon to use. See https://material.io/icons/ for icon names
+	*/
+	public function icon($name, $options);
+
+	/**
+	* Navigation
+	*
+	* This is a container the navigation bar, it should respond to different screen sizes and content.
+	* 
+	* Use iTheme::navigation_link() for adding link to this bar.
+	* 
+	* @param array $content This should be a 3(left, middle, right) element array with an array containing content in each. Example: [[$logo, "Hello"], [], ["Link1", "Link2", "Link3"]]
+	* 
+	* Options:
+	* 	- (string) class: The class to append to the navigation bar.
+	*  - (int) orientation: This sets the orientation of the bar. 1 for vertical, 2 for horizontal
+	*  - (string) side: If orientation is set to vertical this will set the side the bar should be on.
+	*  - (bool) fixed: If the bar should always show and push the main content.
+	*  - (string) icon: The name of the icon to use for extending the slide nav.
+	*/
+	public function navigation($content, $options);
+	
+	/**
+	* Navigation Link
+	*
+	* This is a link that fits in the iTheme::navigation() bar.
+	* 
+	* @param string $text The text inside of the link.
+	* @param string $where The href location.
+	* 
+	* Options:
+	* 	- (string) class: The class to append to the link.
+	*  - (bool) active: If the link should be active.
+	*/
+	public function navigation_link($text, $where, $options);
+	
+	/**
 	* Loader
 	*
 	* This will return a indeterminate loader.
@@ -556,7 +650,6 @@ interface iTheme {
 	* 	- Notice: 2
 	* 	- Warning: 3
 	* 	- Error: 4
-	*
 	*
 	*/
 	public function tell(&$element, $level, $options);
