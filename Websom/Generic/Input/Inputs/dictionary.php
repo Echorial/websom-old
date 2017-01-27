@@ -5,7 +5,10 @@
 * 
 * The Dictionary input is based on the Theme::input_dictionary().
 * 
+* Note: If using a database to search in use the Dictionary->database option.
+* 
 * Options:
+* 	- string Dictionary->database Set this to a url to post(Dictionary->getKey) a search string to. The page should return a json string containg a list of key value pairs. 
 * 	- int Dictionary->maxKeys This is the maximum number of keys that are allowed to be inputed by the user.
 *  - int Dictionary->minKeys This is the minimum number keys that are allowed.
 *  - int Dictionary->placeholder The placeholder before keys are inputed.
@@ -15,8 +18,11 @@
 class Dictionary extends Input {
 	public $globalName = "Dictionary";
 	
-	public $source = "";
+	public $source = false;
 	public $subSource = "";
+	
+	public $database = false;
+	public $getKey = "search";
 	
 	public $maxKeys = 99999;
 	public $minKeys = 0;
@@ -48,7 +54,9 @@ class Dictionary extends Input {
 		$params = [
 			"source" => $this->source,
 			"placeholder" => $this->placeholder,
-			"extraPlaceholder" => $this->extraPlaceholder
+			"extraPlaceholder" => $this->extraPlaceholder,
+			"database" => $this->database,
+			"getKey" => $this->getKey
 		];
 		
 		if ($this->subSource != "")
@@ -59,12 +67,17 @@ class Dictionary extends Input {
 		$e->attr("data-source", $this->source);
 		$e->attr("data-sub-source", $this->subSource);
 		
+		if ($this->database !== false)
+			$this->allowUserKeys = true;
+		
 		$e->attr("data-custom-keys", $this->allowUserKeys ? "1" : "0");
 		$e->attr("data-max-keys", $this->maxKeys);
 		$e->attr("data-min-keys", $this->minKeys);
 		
 		$e->attr("isinput", "");
 		$e->attr("id", $this->id);
+		
+		$this->doVisible($e);
 		
 		return $e->get();
 	}
