@@ -14,9 +14,8 @@
 * This class is used to construct and send emails.
 * Example:
 * \code
-* $email = new Email("noreply@example.com", "person@example.com", "Example Subject", "Example Body"); //This will create a new email object but not send it.
-* $email->headers("Reply-To", "noreply@example.com");
-* if ($email->send()) echo "Sent"; // Send the email.
+* $email = new Email(true, "Example Subject", "Example Body"); //This will create a new email object but not send it.
+* if ($email->send(["person@example.com", "anotherperson@example.com"])) echo "Sent"; // Send the email to 2 emails, from the no reply email account.
 * \endcode
 */
 class Email extends Hookable {
@@ -26,8 +25,8 @@ class Email extends Hookable {
 	
 	static public function init() {
 self::$config = Config::Get("Email", 'enabled = "on" ;`on` or `off`
-dev_folder = "Websom/Website/Emails/" ;The folder(path from Document_root) where emails sent will be while website is not `live`');
-	
+dev_folder = "Websom/Website/Emails/" ;The folder(path from Document_root) where emails sent will be while website is not `live`
+no_reply = "noreply@example.com" ;The account that should be used to send non reply emails. This is used by modules.');
 	}
 	
 	/**
@@ -45,19 +44,30 @@ dev_folder = "Websom/Website/Emails/" ;The folder(path from Document_root) where
 	*/
 	public $body;
 	
+	/**
+	* Set this to a string to override the from header.
+	*/
+	public $customFrom = false;
+	
 	public $headers = [];
 	
 	//Object stuff
 	/**
 	* This will build the email and setup some headers.
 	* 
-	* @param string $from The email address to send from.
+	* @param string $from The email address to send from. Set this to true if you wish to send this email from the server no reply account.
 	* @param string $subject The subject text.
 	* @param string $body The body text of the email.
 	*/
 	public function __construct($from, $subject, $body) {
 		$this->headers = [];
-		$this->from = $from;
+		if ($from === true) {
+			$this->from = self::$config["no_reply"];
+			$this->customFrom = Website_name." <".self::$config["no_reply"].">";
+			$this->addHeader("Reply-To", Website_name." <".self::$config["no_reply"].">");
+		}else{
+			$this->from = $from;
+		}
 		$this->subject = $subject;
 		$this->body = $body;
 	}
@@ -89,7 +99,13 @@ dev_folder = "Websom/Website/Emails/" ;The folder(path from Document_root) where
 		if ($this->event("send", [$this])) //Let code cancel the send.
 			return;
 		
-		$headers = "From: ".$this->from;
+		$headers = "";
+		if ($this->customFrom === false) {
+			$headers = "From: ".$this->from;
+		}else{
+			$headers = "From: ".$this->customFrom;
+		}
+		
 		foreach ($this->headers as $key => $value) {
 			$headers .= "\r\n".$key.": ".$value;
 		}

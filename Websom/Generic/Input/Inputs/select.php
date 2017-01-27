@@ -98,6 +98,8 @@ class Select extends Input {
 		$e->attr("is-multiple", ($this->multiple) ? 1:0);
 		$e->attr("isinput", "");
 		
+		$this->doVisible($e);
+		
 		return $e->get();
 	}
 	
@@ -148,6 +150,12 @@ class Select extends Input {
 			}
 			return $built;
 		}else{
+			if ($data[0] == "")
+				if ($this->allowDefault) {
+					return "";
+				}else{
+					return false;
+				}
 			if (!in_array($data[0], $this->options))
 				return false;
 		}

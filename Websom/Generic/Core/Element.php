@@ -29,10 +29,17 @@ class Element {
 	}
 	
 	/**
-	* Use this to insert an `element` instance into the this `element` contents.
+	* Use this to insert an `element` instance into this `element` contents.
 	*/
 	public function append($element) {
 		array_push($this->identity['contents'], $element);
+	}
+	
+	/**
+	* Use this to insert an `element` instance before this `element` contents.
+	*/
+	public function prepend($element) {
+		array_unshift($this->identity['contents'], $element);
 	}
 	
 	/**
@@ -51,9 +58,14 @@ class Element {
 
 	/**
 	* Use this to get the type of element `this` is.
+	* 
+	* Use `$element->type();` to get a type.
+	* Use `$element->type("div"); to set a type`
 	*/
-	public function type() {
-		return $this->identity['type'];
+	public function type($setType = false) {
+		if (!$setType)
+			return $this->identity['type'];
+		$this->identity["type"] = $setType;
 	}
 	
 	/**
@@ -212,13 +224,13 @@ class Element {
 		
 		foreach ($elem->identity['contents'] as $subElem) {
 			$ty = gettype($subElem);
-			if ($ty == 'string' OR $ty == 'integer') {
+			if ($ty == 'string' OR $ty == 'integer' OR $ty == 'boolean') {
 				$str .= $subElem;
 				continue;
 			}
 			
 			if (gettype($subElem) !== "object")
-				throw new Exception("Cannot stringify non element of type ".gettype($subElem).". In element ".$elem->identity["type"]."(".self::attributer($elem->identity['attr']).")");
+				throw new Exception("Cannot stringify non element of type ".gettype($subElem).". In element ".$elem->identity["type"]."(".self::attributer($elem->identity['attr']).") (".var_export($subElem, true).")");
 			
 			if (get_class($subElem) === 'Element') {
 				$str .= self::stringify($subElem);

@@ -1,11 +1,7 @@
 <?php
 /**
 * \ingroup TemplateClasses
-* Information: 
-*
-* 	- Author: Echorial
-* 	- Date: Unkown
-* 	- Version: 1.0
+* 
 * \brief This is the template class for all 'Controls'.
 *
 * To create custom controls you would simply extend the Control class and override the needed methods.

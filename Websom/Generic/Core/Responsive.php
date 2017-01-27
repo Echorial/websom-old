@@ -64,7 +64,7 @@ function Responsive_Once($responsive) {
 /// \cond
 function Websom_Check_Responsive () {
 	global $Responives;
-	Storage::Set("gpast", false);
+	
 	if (count($_POST) == 0) return false;
 	if (!isset($_POST['responiveid'])) return false;
 	if (!isset($Responives[$_POST['responiveid']])) return false;

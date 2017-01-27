@@ -11,11 +11,9 @@
 *
 */
 
-
 $Input_Areas = array();
 
 $Js = include_all(Websom_root."/Generic/Input/Inputs/");
-
 
 $InputScript = '';
 $InputScript .= '<script>
@@ -185,7 +183,7 @@ class InputController {
 		$formStart = '<websform '.$starter.' name="'.$form->name.'">';
 		
 		if ($form->loadData !== false) {
-			$formStart .= '<websformloader>'.json_encode($form->loadData).'</websformloader>';
+			$formStart .= '<websformloader>'.json_encode($form->loadData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK | JSON_HEX_TAG).'</websformloader>';
 		}
 		
 		$formEnd = '</websform>';
@@ -248,6 +246,36 @@ class InputController {
 	}
 	
 	
+	/**
+	* This will try to get a single input value for the $inputName in the $form.
+	* Note: This does not send any messages.
+	* 
+	* @param Form $form The form to check against.
+	* @param string $inputName The name of the input to find.
+	* 
+	* @return An array [true if input was validated or false if not , the error message if any , the input value if any or null if not]
+	*/
+	static function get_single_input_value($form, $inputName) {
+		$inp = $form->getInput($inputName);
+		
+		if ($inp === false) {
+			return [false, "No input with that name found.", null];
+		}
+		
+		if (isset($_POST['inputPost'][$form->name.'__'.$inputName])) {
+			//Deserialize the input from the client and store it.
+			$inpValue = $inp->receive($_POST['inputPost'][$form->name.'__'.$inputName]);
+			//Validate the input on the server.
+			$error = $inp->validate_server($inpValue);
+			if ($error !== true) {
+				return [false, $error, null];
+			}
+			
+			return [true, "", $inpValue];
+		}else{
+			return [false, "Not submited.", null];
+		}
+	}
 	
 	static function get_post_and_message ($form) {
 		if (!isset($_POST)) return false;
@@ -284,7 +312,6 @@ class InputController {
 				self::send_error_messages($form, $de[0], $de[1]);
 				return false;
 			}
-			
 			self::send_success_messages($form, $de[0]);
 		});
 		
@@ -337,7 +364,7 @@ class InputController {
 	}
 	
 	static function send_error_messages($form, $data, $errors) {
-		$m = $form->event("error", [$data], false);
+		$m = $form->event("error", [$data, $errors], false);
 		if (get_class($m) !== "Message") throw new Exception("error event must return a Message object.");
 		
 		Cancel('{"serverMsg": 0, "msg": '.json_encode($errors).', "actions": '.$m->get().'}');
@@ -429,6 +456,16 @@ class Input {
 	public $id = '_NULL_';
 	
 	public $_type = 0;
+	
+	protected function doVisible(Element $element) {
+		if (!$this->visible)
+			$element->addClass("no-display");
+	}
+	
+	/**
+	* Inputs will check this when Input::get() is called and set its visibility accordingly.
+	*/
+	public $visible = true;
 	
 	/**
 	* This is the method called by websom to get the input html string.
@@ -979,6 +1016,7 @@ class Structure {
 		foreach ($data as $key => $value) {
 			$rtn = str_replace('%'.$key.'%', $value, $rtn);
 		}
+		
 		return $rtn;
 	}
 }
@@ -1033,6 +1071,18 @@ class Message {
 			'dur' => $duration
 		];
 	}
+
+	/**
+	* This is a built in Message/Action that takes the client to a location.
+	*
+	* \param string $location This is the location to send the client to.
+	*/
+	static public function Go($location) {
+		return [
+			'__type' => 'Forward',
+			'url' => $location
+		];
+	}
 	
 	/**
 	* Same as Message::Success() but with an error.
@@ -1048,12 +1098,24 @@ class Message {
 	/**
 	* For creating quick errors.
 	*/
-	static public function QuickError($errorText, $duration = 10) {
+	static public function QuickError($errorText, $duration = 30) {
 		$m = new Message();
 		$e = Theme::container("", "QuickError");
 		$e->insert($errorText);
 		Theme::tell($e, 4, "QuickError");
 		$m->add("form", Message::Error($e->get(), $duration));
+		return $m;
+	}
+		
+	/**
+	* For creating quick success.
+	*/
+	static public function QuickSuccess($successText, $duration = 30) {
+		$m = new Message();
+		$e = Theme::container("", "QuickSuccess");
+		$e->insert($successText);
+		Theme::tell($e, 1, "QuickSuccess");
+		$m->add("form", Message::Success($e->get(), $duration));
 		return $m;
 	}
 	
@@ -1074,7 +1136,11 @@ class Message {
 * \ingroup Input
 *
 * The form class is used to create responsive and fast user input forms.
-*
+* 
+* Events:
+* 	- "success"($data): Called on the form submit when it is validated. Return a Message object that will be sent to the client.
+* 	- "error"($data, $msg): Called on the form submit when the input is not valid. Return a Message object that will be sent to the client.
+* 
 * Client events:
 * 	- inputError:
 * 		- $form: The form element.
@@ -1101,6 +1167,8 @@ class Form extends Hookable {
 	public $loadData = false;
 	
 	public $submitOnStart = false;
+	
+	public $inputs = [];
 	
 	public $clientEvents = [];
 	
@@ -1134,7 +1202,7 @@ class Form extends Hookable {
 				
 		$this->client("inputError", "$(event.\$error).fadeOut(100);$(event.\$error).addClass('input_error');$(event.\$error).fadeIn(100);");
 		
-		$this->on("error", function ($data) {
+		$this->on("error", function ($data, $msg) {
 			$m = new Message();
 			$e = Theme::container("", "Form.error");
 			$e->insert("Error");
@@ -1174,6 +1242,13 @@ class Form extends Hookable {
 		$this->clientEvents[$event] = $javascript;
 	}
 	
+	
+	/**
+	* This is a wrapper for InputController::get_single_input_value().
+	*/
+	function getSingleValue($inputName) {
+		return InputController::get_single_input_value($this, $inputName);
+	}
 	
 	/**
 	* Loads a key/value array into the form
@@ -1217,6 +1292,21 @@ class Form extends Hookable {
 		
 		InputController::send_success_messages($this, $data);
 		return true;
+	}
+	
+	/**
+	* Used to get a form input based on its name.
+	* 
+	* @param string $name The name to search for.
+	* 
+	* @return Input The input found, or false if not found.
+	*/
+	function &getInput($name) {
+		foreach ($this->inputs as $inp) {
+			if ($name == $inp['n'])
+				return $inp['i'];
+		}
+		return false;
 	}
 	
 	/**
@@ -1280,8 +1370,17 @@ class Action_Error extends Action {
 	}
 }
 
+class Action_Forward extends Action {
+	public $name = "Forward";
+	
+	function javascript() {
+		return 'window.location.href = data["url"];';
+	}
+}
+
 onEvent("ready", function () {
 	Register_Action(new Action_Success());
+	Register_Action(new Action_Forward());
 	Register_Action(new Action_Error());
 	Register_Action(new Action_Remove());
 });
