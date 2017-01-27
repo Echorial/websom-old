@@ -19,6 +19,19 @@
 class Linker extends Hookable {
 	/// \cond
 	
+	static public $injects = [];
+	
+	static private function normalVars($vars) {
+		if (count($vars) == 0)
+			return "";
+		
+		$rtn = [];
+		foreach ($vars as $k => $v) {
+			$rtn[] = $k."=".$v;
+		}
+		return "?".implode("&", $rtn);
+	}
+	
 	static public $links;
 	
 	static public function init() {
@@ -40,12 +53,29 @@ class Linker extends Hookable {
 	/**
 	* This will return the location associated with the $name.
 	* 
+	* @param string $name The name of the linker to get.
+	* @param array [$vars] An associative array containing key(var name) value(var value) for $_GET variables.
+	* 
 	* @return false if not found or string if found.
 	*/
-	static public function get($name) {
-		if (isset(self::$links[$name]))
-			return self::$links[$name];
+	static public function get($name, $vars = []) {
+		if (isset(self::$links[$name])) {
+			if (isset(self::$injects[$name]))
+				return call_user_func_array(self::$injects[$name], [self::$links[$name], $vars]);
+			return self::$links[$name].self::normalVars($vars);
+		}
 		return false;
+	}
+	
+	/**
+	* Use this to inject a filter function($vars) into a specific Linker reference $_GET variable serializer.
+	* 
+	* @param string $name The reference name.
+	* @param callable $filter A function($url(string), $variables[$key => $value]) that should return a url.
+	* 
+	*/
+	static public function inject($name, callable $filter) {
+		self::$injects[$name] = $filter;
 	}
 }
 
