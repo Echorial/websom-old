@@ -15,12 +15,17 @@ if ($docChars[count($docChars)-1] == '/'){
 * Globals:
 * 	- Websom_root: The root working folder of websom.
 * 	- Document_root: The root public folder.
+* 	- Local_root: The root directory using ./. This is set by the page.
 * 	- Document_root_local: /
 * 	- Host: The complete website url.
 * 	- Website_name: The name of the website.
 * 	- Modules_root: The modules directory.
 *
 */
+
+
+if (!defined("Local_root"))
+	define("Local_root", "");
 
 define("Websom_root", $docRoot.'/Websom');
 define("Document_root", $docRoot);
@@ -306,17 +311,17 @@ include("Websom_Run_Modules.php");
 
 callEvent("resourcesLoad");
 
-Resources::Register_All('Css/');
-Resources::Register_All('Javascript/');
+Resources::Register_All(Local_root.'Css/');
+Resources::Register_All(Local_root.'Javascript/');
 
-Resources::setInfo("Javascript/Jquery.js", ["index" => 9999]);
-Resources::setInfo("Javascript/Tools.js", ["index" => 9998]);
+Resources::setInfo(Local_root."Javascript/Jquery.js", ["index" => 9999]);
+Resources::setInfo(Local_root."Javascript/Tools.js", ["index" => 9998]);
 
-Resources::setInfo("Javascript/main.js", ["index" => 9997]);
+Resources::setInfo(Local_root."Javascript/main.js", ["index" => 9997]);
 
-Resources::setInfo("Javascript/Form.js", ["index" => 9996]);
-Resources::setInfo("Javascript/Theme.js", ["index" => 9996]);
-Resources::setInfo("Javascript/Input.js", ["index" => 9996]);
+Resources::setInfo(Local_root."Javascript/Form.js", ["index" => 9996]);
+Resources::setInfo(Local_root."Javascript/Theme.js", ["index" => 9996]);
+Resources::setInfo(Local_root."Javascript/Input.js", ["index" => 9996]);
 
 
 
