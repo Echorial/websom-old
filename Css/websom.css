@@ -2,3 +2,7 @@ websform {
 	display: block;
 	line-height: normal;
 }
+
+.no-display {
+	display: none;
+}
