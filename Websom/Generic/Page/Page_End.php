@@ -1,9 +1,6 @@
 <?php
 callEvent('end');
 
-
-
-
 $mainBody = ob_get_contents();
 ob_end_clean();
 
@@ -68,4 +65,5 @@ if ($Render === false){
 	if ($resources !== false) $Render = '<!DOCTYPE html><html><head>'.$Properties['Css'].$Properties['Javascript'].$Properties['Input'].'</head>'.'<body>'.$Render.'</body></html>';
 	echo $Render;
 }
+
 ?>
