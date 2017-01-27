@@ -39,7 +39,7 @@ function Page($f){
 * 
 * Use this function to insert a string into the html structure.
 *
-* <div class="warning">This will search the structure for $tag:$place and add $what into the found place. If the tag and or place is not found nothing will happen.</div>
+* <div class="warning">This will search the structure for $tag and add $what into the found place. If the tag and or place is not found nothing will happen.</div>
 *
 * Example:
 * \code
@@ -58,10 +58,10 @@ function Page($f){
 * 		- bottom: at the bottom of the tag.
 * 	- what: the string to insert.
 *
-*//*
+*/
 function Inject($tag, $place, $what) {
 	$add = $what;
-	$prop = GetPropertie($tag.':'.$place);
+	$prop = GetPropertie($tag);
 	if (isset($prop)) {
 		if ($place == 'top'){
 			$add .= $prop;
@@ -70,7 +70,7 @@ function Inject($tag, $place, $what) {
 		}
 	}
 	SetPropertie($tag.':'.$place, $add);
-}*/
+}
 
 include(Websom_root."/Generic/Core/Page_Functions.php");
 
