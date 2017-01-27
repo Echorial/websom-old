@@ -188,7 +188,10 @@ class Text extends Input {
 		$this->displayType = $displayType;
 	}
 	
-	function get() {
+	/**
+	* For making extending Text easier.
+	*/
+	function buildElement() {
 		$e = Theme::input_text($this->defaultValue, $this->placeholder, $this->label, ["type" => $this->displayType]);
 		
 		if (!is_array($this->only) OR !is_array($this->not))
@@ -203,9 +206,17 @@ class Text extends Input {
 		$e->attr("onlydesc", $this->only[1]);
 		$e->attr("isinput", "");
 		
+		
+		
 		//$html = '<input isinput id="'.$this->id.'" blank="'.($this->blank ? 1:0).'" count="'.$this->min.' '.$this->max.'" not="'.$this->not.'" only="'.$this->only.'" name="'.$meta['name'].'" type="text" placeholder="Text"></input>';
 		
-		return $e->get();
+		$this->doVisible($e);
+		
+		return $e;
+	}
+	
+	function get() {
+		return $this->buildElement()->get();
 	}
 	
 	function send() {
