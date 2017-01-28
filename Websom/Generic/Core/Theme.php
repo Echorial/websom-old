@@ -690,6 +690,7 @@ interface iTheme {
 	* Options:
 	* 	- (string) class: The class to append to the button.
 	* 	- (string) align: "left", "middle", "right"
+	* 	- (bool) hideOnSmall(defualt true): If false this will always be visible.
 	*/
 	public function navigation_show($content, $id, $options);
 	
