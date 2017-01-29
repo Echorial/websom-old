@@ -91,10 +91,19 @@ $(document).ready(function () {
 					sendCommand = cont+" "+sendCommand;
 					cont = "";
 				}
+				c.attr("disabled", "disabled");
 				respond({"command": sendCommand}, function (msg) {
+					c.removeAttr("disabled");
+					c.focus();
 					if (isset(msg.msg)) {
-						c.val(c.val() + ("\n"+msg.msg));
-						c.val(c.val() + ("\n"+msg.token));
+						if (typeof msg.msg == "object") {
+							if (msg.msg[0] == "open") {
+								window.location.href = msg.msg[1];
+							}
+						}else{
+							c.val(c.val() + ("\n"+msg.msg));
+							c.val(c.val() + ("\n"+msg.token));
+						}
 					}else {
 						cont = msg.cmd;
 						c.val(c.val() + ("\n"+msg.msgb+"\n"+msg.token));
@@ -133,7 +142,9 @@ $(document).ready(function () {
 		global $Console_Config, $Console_Commands;
 		$msg = Console_Complete_Run($r['command']);
 		$rtn = ['token' => $Console_Config['token']];
-		if (is_array($msg)) {
+		if (is_object($msg) AND get_class($msg) == "Console_Open_Url") {
+			$rtn['msg'] = ["open", $msg->url];
+		}else if (is_array($msg)) {
 			$rtn['cmd'] = $r['command'].' '.$msg[1];
 			$rtn['msgb'] = $msg[0];
 		}else{
@@ -142,6 +153,13 @@ $(document).ready(function () {
 		
 		return $rtn;
 	}
+}
+
+class Console_Open_Url {
+	function __construct($url) {
+		$this->url = $url;
+	}
+	public $url;
 }
 
 class Console_Console extends Widget {
@@ -501,11 +519,11 @@ onEvent("ready", function () {
 	Console_Register(CmdName());
 	Console_Register(CmdInfo());
 	Console_Register(CmdHelp());
-	
 });
 
 onEvent("resourcesLoad", function () {
 	if (defined('Console_Page')) {
+		CallEvent("Console");
 		Theme::noTheme();
 		Responsive_Once(new Console_Console_Responsive());
 	}else{
