@@ -503,7 +503,7 @@ interface iTheme {
 	* File input
 	*
 	* Methods: Server Prefix: input_
-	*	- get(): client only: Returns an array of base64 versions of the files.
+	*	- get(): client only: Returns an array of [base64 file, Image object]'s. Like: [["Base64 stuff", Image object], ["Base64", Image object], ect..]
 	*	- element(): Returns the real input element.
 	*
 	*
