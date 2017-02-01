@@ -45,6 +45,8 @@ class Checkbox extends Input {
 		$e->attr("id", $this->id);
 		$e->attr("isinput", "");
 		
+		$this->doVisible($e);
+		
 		return $e->get();
 	}
 	

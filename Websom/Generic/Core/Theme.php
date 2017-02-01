@@ -20,9 +20,7 @@ onEvent("resourcesLoad", function () {
 * 
 * This example shows how you can get a button `Element`. This button's style will adhere to the current Theme installed.
 *
-*
 */
-
 class Theme {
 	
 	static private $rules = [];
@@ -43,7 +41,7 @@ class Theme {
 			self::$theme = new $name(self::$rules);
 			return true;
 		}else if (file_exists(Document_root.'/Websom/Website/Themes/'.$name.'.wbstheme')) {
-			throw new Exception("You need to unpack the ".$name." theme. Use 'uptheme ".$name."' in the websom console to unpack the theme.");
+			//throw new Exception("You need to unpack the ".$name." theme. Use 'uptheme ".$name."' in the websom console to unpack the theme.");
 		}
 		return false;
 	}
@@ -191,6 +189,11 @@ class Theme {
 		if (self::$theme !== false)
 		return self::$theme->input_submit($text, self::mergeRules(self::getRule('input_submit', $label), $options));
 	}
+	
+	static public function input_dictionary($params, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->input_dictionary($params, self::mergeRules(self::getRule('input_dictionary', $label), $options));
+	}
 
 	static public function loader($label, $options = []){
 		if (self::$theme !== false)
@@ -219,10 +222,40 @@ class Theme {
 		return self::$theme->tell($element, $level, self::mergeRules(self::getRule('tell', $label), $options));
 	}
 	
+	static public function chip($text, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->chip($text, self::mergeRules(self::getRule('chip', $label), $options));
+	}
+
+	static public function icon($name, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->icon($name, self::mergeRules(self::getRule('icon', $label), $options));
+	}
+
+	static public function modal($content, $id, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->modal($content, $id, self::mergeRules(self::getRule('modal', $label), $options));
+	}
 	
+	static public function modal_button($content, $id, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->modal_button($content, $id, self::mergeRules(self::getRule('modal_button', $label), $options));
+	}
 	
+	static public function navigation($content, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->navigation($content, self::mergeRules(self::getRule('navigation', $label), $options));
+	}
 	
+	static public function navigation_link($text, $where, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->navigation_link($text, $where, self::mergeRules(self::getRule('navigation_link', $label), $options));
+	}
 	
+	static public function navigation_show($content, $id, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->navigation_show($content, $id, self::mergeRules(self::getRule('navigation_show', $label), $options));
+	}
 	
 }
 
@@ -271,7 +304,7 @@ interface iTheme {
 	* 		- Large: 3
 	* 	- round(bool): If the button is rounded or not.
 	* 	- disabled(bool): If the button is disabled.
-	*
+	*	- link(string): If set the button will be a link.
 	*/
 	public function button($text, $options);
 	
@@ -374,6 +407,14 @@ interface iTheme {
 	* 	- new(bool): If the badge alerts the user to something new.
 	*/
 	public function badge($content, $options);
+
+	/**
+	* Chip
+	*
+	* Options:
+	* 	- class(string): The class to apply to the chip
+	*/
+	public function chip($text, $options);
 	
 	/**
 	* List of content.
@@ -397,7 +438,9 @@ interface iTheme {
 	*	- get(): Returns the string within the text field.
 	*	- set(string value): Sets the string within the text field.
 	*	- element(): Returns the real input element.
-	*
+	* 
+	* Options:
+	* 	- "type": A string for the input type. Example("password", "text", "number", "multiline")
 	*/
 	public function input_text($value, $placeholder, $options);
 	
@@ -417,6 +460,7 @@ interface iTheme {
 	*	- default(string): The key to be selected at first.
 	*	- optionClass(string): The class to be applyed to each option.
 	*	- multiple(bool): If the user should be able to select multiple options.
+	* 	- type(string): The type of text box it is. (text, password, email, ect.)
 	*
 	*/
 	public function input_select($keyArray, $options);
@@ -459,7 +503,7 @@ interface iTheme {
 	* File input
 	*
 	* Methods: Server Prefix: input_
-	*	- get(): client only: Returns an array of base64 versions of the files.
+	*	- get(): client only: Returns an array of [base64 file, Image object]'s. Like: [["Base64 stuff", Image object], ["Base64", Image object], ect..]
 	*	- element(): Returns the real input element.
 	*
 	*
@@ -519,6 +563,138 @@ interface iTheme {
 	public function input_submit($text, $options);
 	
 	/**
+	* Dictionary
+	*
+	* This is a simple key searching box that lets users input values and searches for those values in a javascript object or web service.
+	* 
+	* Methods:  Server Prefix: input_
+	*	- get(): Returns an array of keys. Example: ["key1", "key2"]
+	*	- set(array): Sets the current keys to the array.
+	*	- element(): Returns the input text box.
+	*
+	* @param array $params This contains two options:
+	* 								  - database(optional): A string that tells what url to get a search string to.
+	* 								  - getKey(optional): A string for what get variable key to send.
+	* 								  - source(optional): A string that tells where the source is in the window. Example: "TagsForSource" will be looked for like so window["TagsForSource"]
+	*								  - subSource(optional): This is the extra sub object of the source object. Example: "subKey" will be looked for like so window["TagsForSource"]["subKey"]
+	*								  - placeholder(optional): The placeholder before keys are inputed.
+	*								  - extraPlaceholder(optional): The placeholder after keys are inputed.
+	* 
+	* Options:
+	* 	- class: The dictionary box class.
+	*/
+	public function input_dictionary($params, $options);
+	
+	/**
+	* Icon
+	* 
+	* Icon names should come from the Google material design icons(https://material.io/icons/)
+	* 
+	* This will return a simple icon element.
+	* @param string $name The name of the icon to use. See https://material.io/icons/ for icon names
+	*/
+	public function icon($name, $options);
+
+	/**
+	* Navigation
+	*
+	* This is a container the navigation bar, it should respond to different screen sizes and content.
+	* 
+	* Use iTheme::navigation_link() for adding link to this bar.
+	* 
+	* @param array $content 
+	* 		Example: 
+	* 		\code
+	* 		$content = [
+	* 			"id" => "mainNavBar", //The id for this navigation bar. (We will use this latter)
+	* 			"content" => [ //Three array items for left, middle, and right aligned content
+	* 				[ Theme::navigation_link("Link 1", "Link1.php", "link") ],
+	* 				[],
+	* 				[]
+	* 			],
+	* 			"class" => "hello", //Adds class to main nav bar.
+	* 			"static" => [ //Static content will not automatically hide/show on screen size changes. Note: Its content can.
+	*  			Theme::navigation_show( Theme::icon("menu"), "mainNavBar" <- remember from id, "main" ) //This will make a button that will show our navigation menu if the screen is too small.
+	* 	   			Theme::navigation_show( Theme::icon("person"), "hiddenNavigationMenu", "account" ) 
+	* 			],
+	* 			"sideNavs" => [
+	* 				[
+	* 					"id" => "hiddenNavigationMenu",
+	* 					"content" => [ //We do not use aligned items here.
+	* 						"Hello world"
+	* 					],
+	* 					"side" => "right" //Make this menu start form the right side of the window.
+	* 				]
+	* 			]
+	* 			
+	* 		]
+	* 		\endcode
+	* 
+	* 
+	* 
+	* 
+	* Options:
+	*/
+	public function navigation($content, $options);
+	
+	/**
+	* Navigation Link
+	*
+	* This is a link that fits in the iTheme::navigation() bar.
+	* 
+	* @param string $text The text inside of the link.
+	* @param string $where The href location.
+	* 
+	* Options:
+	* 	- (string) class: The class to append to the link.
+	*  - (bool) active: If the link should be active.
+	*/
+	public function navigation_link($text, $where, $options);
+	
+	/**
+	* Modal
+	* 
+	* This is a dialog that will open when a iTheme::modal_button with the same $id is clicked.
+	* 
+	* @param string/element $content The content of the modal
+	* @param string $id A unique identifier for this modal.
+	* 
+	* Options:
+	* 	- (string) where: Where the modal will appear. Options: "bottom", "center"
+	*/
+	public function modal($content, $id, $options);
+	
+	/**
+	* Modal_button
+	* 
+	* This is a dialog that will open when a iTheme::modal_button with the same $id is clicked.
+	* 
+	* @param string/element $content The content of the modal
+	* @param string $id A unique identifier for this modal.
+	* 
+	* Options:
+	* 	- (string) class: The button class.
+	* 	- (int) size: Same as iTheme::button
+	* 	- (bool) round: Same as iTheme::button
+	*/
+	public function modal_button($content, $id, $options);
+	
+	/**
+	* Navigation Show
+	*
+	* This is a button that will show a hidden navigation side/bar based on its id.
+	* 
+	* @param string $content The content of the button.
+	* @param string $id The navigation/sideNav id.
+	* 
+	* Options:
+	* 	- (string) class: The class to append to the button.
+	* 	- (string) align: "left", "middle", "right"
+	* 	- (bool) hideOnSmall(defualt true): If false this will always be visible.
+	*/
+	public function navigation_show($content, $id, $options);
+	
+	/**
 	* Loader
 	*
 	* This will return a indeterminate loader.
@@ -557,7 +733,6 @@ interface iTheme {
 	* 	- Warning: 3
 	* 	- Error: 4
 	*
-	*
 	*/
 	public function tell(&$element, $level, $options);
 }
@@ -583,7 +758,12 @@ class Theme_Exporter {
 	}
 	
 	function prepare() {
-		return mkdir($this->el, 0777, true);
+		if (file_exists($this->el)) {
+			return "Already created.";
+		}else{
+			mkdir($this->el, 0777, true);
+			return "Created.";
+		}
 	}
 	
 	function export() {
@@ -596,10 +776,10 @@ class Theme_Exporter {
 					fclose($check);
 					return Error('Export', 'Unable to open theme file at "'.$loc[0].'".');
 				}
-				if (strpos(fread($check, filesize($loc[0])), ['&*Section*&', '&*SectionOptional*&', '&*SecSplit*&']) !== false) {
-					fclose($check);
-					return Error('Export', 'File '.$loc[0].' contains an invalid string &*Section*& or &*SectionOptional*& or &*SecSplit*&.');
-				}
+				//if (strpos(fread($check, filesize($loc[0])), ['&*Section*&', '&*SectionOptional*&', '&*SecSplit*&']) !== false) {
+					//fclose($check);
+					//return Error('Export', 'File '.$loc[0].' contains an invalid string &*Section*& or &*SectionOptional*& or &*SecSplit*&.');
+				//}
 				fclose($check);
 			}
 		}
@@ -670,16 +850,16 @@ function CmdExportTheme () {
 		$exp->addFile(Websom_root.'/Website/Themes/'.$params['themeName'].'.php', 'Theme');
 		
 		foreach ($flags['JavascriptFiles'] as $js) {
-			$exp->addFile(trim($js['filePath'], '/'), 'Javascript', ($js['optional'] == 'true') ? true : false, $js['description']);
+			$exp->addFile(trim($js['filePath'], '/'), 'Javascript', ($js['optional'] == 'true') ? false : true, $js['description']);
 		}
 		
 		foreach ($flags['CssFiles'] as $css) {
-			$exp->addFile(trim($css['filePath'], '/'), 'Css', ($css['optional'] == 'true') ? true : false, $css['description']);
+			$exp->addFile(trim($css['filePath'], '/'), 'Css', ($css['optional'] == 'true') ? false : true, $css['description']);
 		}
 		
 		$str = 'Exporting from '.Websom_root.'/Website/Themes/'.$params['themeName'].'.php'.' to '.Document_root.'/ExportedThemes/'.$params['themeName'].'.wbstheme';
 		$str .= '
-		'.'Making directory '.var_export($exp->prepare(), true).'
+		'.'Making directory '.$exp->prepare().'
 		'.'Making file '.($exp->export());
 		return $str;
 	};
@@ -814,7 +994,147 @@ function CmdImportTheme () {
 	return $cmd;
 }
 
+function CmdViewTheme () {
+	$cmd = new Console_Command('ViewTheme', 'View all the parts of the current theme.');
+	$cmd->aliases = [
+		'dtheme',
+		'displaytheme',
+		'viewtheme'
+	];
+	
+	$cmd->call = function ($params, $flags) {
+		$_SESSION["Theme_View_Allowed"] = true;
+		return new Console_Open_Url(createProcessLink("themeView", [], false));
+	};
+	
+	return $cmd;
+}
+
 onEvent("ready", function () {
+	onProcess("themeView", function () {
+		if (!isset($_SESSION["Theme_View_Allowed"]) OR $_SESSION["Theme_View_Allowed"] != true) {
+			return;
+		}
+		Page("Blank.html");
+		
+		$navStruct = [
+			"id" => "main_nav",
+			"side" => "left",
+			"static" => [
+				Theme::navigation_show(Theme::icon("menu", "menu")->get(), "main_nav", "account"),
+				Theme::navigation_show(Theme::icon("person", "account")->get(), "account", "account", ["align" => "right"])
+			],
+			"content" => [
+				[
+					Theme::navigation_link("Home", "#Home", "home", ["active" => false]),
+					Theme::navigation_link("Page 2", "#Page2", "forum", ["active" => false]),
+					Theme::navigation_link("Page 3", "#Page3", "forum", ["active" => false])
+				],
+				[],
+				[]
+			],
+			"sideNavs" => [
+				[
+					"id" => "account",
+					"side" => "right",
+					"fixed" => true,
+					"content" => [
+						"Right navigation panel"
+					]
+				]
+			]
+		];
+
+
+
+		echo Theme::navigation($navStruct, "main")->get();
+		
+		$head = Theme::head("Theme example", "test");
+		echo $head->get();
+		
+		$buttonNormal = Theme::button("Button", "test");
+		$buttonSmall = Theme::button("Small", "test", ["size" => 1]);
+		$buttonMed = Theme::button("Medium", "test", ["size" => 2]);
+		$buttonLarge = Theme::button("Large", "test", ["size" => 3]);
+		$buttonRound = Theme::button("Round", "test", ["round" => true, "size" => 3]);
+		$buttonTooltip = Theme::button("Tooltip", "test", ["size" => 1]);
+		Theme::tooltip($buttonTooltip, "This is a tooltip", "test");
+		
+		$buttonContainer = Theme::container(Theme::grid([[$buttonNormal->get(),$buttonSmall->get(),$buttonMed->get(),$buttonLarge->get(),$buttonRound->get(),$buttonTooltip->get()]], "test"), "test");
+		
+		echo $buttonContainer->get();
+		
+		$img1 = Theme::image("http://placehold.it/350x150", "test");
+		$img2 = Theme::image("http://placehold.it/800x600", "test");
+		
+		$group = Theme::group([new Element("a", "Group entry 1", []), new Element("a", "Group entry 2", []), new Element("a", "Group entry 3", [])], "test");
+		
+		$grid = Theme::grid([
+			[
+				$img1->get()."Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas et leo eget magna lacinia efficitur. Ut rhoncus diam nibh.", $img1->get()."Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas et leo eget magna lacinia efficitur. Ut rhoncus diam nibh.", $img1->get()."Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas et leo eget magna lacinia efficitur. Ut rhoncus diam nibh."
+			],
+			[
+				["9 units", 9], ["3 units", 3]
+			]
+		], "test", ["columnClass" => "center"]);
+		echo Theme::container($grid->get(), "test")->get();
+		
+		$tabs = Theme::tabs([
+			"Number 1" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus leo ligula, venenatis vel finibus at, feugiat a augue. Sed pretium turpis elementum mi ornare, mattis efficitur leo ultrices. Integer lobortis accumsan tincidunt. Mauris mollis dolor at nisi accumsan lacinia. Nam tincidunt auctor ultricies. Integer libero ligula, aliquam at molestie eget, mollis eget felis. Vivamus sapien diam, aliquam in nisl a, consectetur posuere nibh. Morbi et libero elementum dolor laoreet fermentum. Vestibulum tincidunt egestas lectus, non ornare libero blandit vel.
+
+Interdum et malesuada fames ac ante ipsum primis in faucibus. Praesent varius condimentum ultrices. Pellentesque dictum sapien nec sem feugiat porta. Suspendisse convallis mollis mi vitae laoreet. Aliquam erat volutpat. Phasellus porttitor sapien odio, non feugiat urna aliquet non. Cras est enim, congue vitae elementum ut, molestie et tellus. Vestibulum id tellus efficitur, sodales tortor ut, maximus enim. Nunc viverra libero at varius tincidunt. Praesent quis imperdiet nisi, quis vulputate nunc. Nunc eleifend lacus a arcu sollicitudin molestie non in lacus. Nunc metus orci, efficitur sit amet risus sit amet, dapibus sagittis ipsum.
+
+Vestibulum rhoncus, orci scelerisque fringilla blandit, ligula odio vulputate nisi, a iaculis erat enim a elit. Duis tristique tincidunt magna, non iaculis odio ultricies eget. Nunc eget dui lacus. Duis eleifend quis ligula in aliquam. Praesent pulvinar bibendum fermentum. Maecenas nulla enim, pharetra quis gravida et, lobortis a enim. Donec lobortis ligula dui, eget scelerisque odio maximus id. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nam dui enim, suscipit sit amet massa nec, bibendum consequat quam. Pellentesque tellus enim, faucibus vel sapien et, luctus ultrices arcu. Curabitur vel erat ligula. Morbi cursus finibus luctus."
+,
+"Number 2" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed consectetur placerat tortor in blandit. Proin ac feugiat mi. Phasellus convallis suscipit est, in eleifend nibh vestibulum sit amet. Suspendisse sem ipsum, eleifend non mi eget, pharetra molestie mauris. Sed nec semper odio. Aliquam in maximus turpis. Mauris ligula neque, eleifend nec eros quis, hendrerit pharetra orci. Suspendisse in neque orci. Cras ullamcorper, urna quis eleifend interdum, neque dui congue orci, vitae iaculis mauris sem ac nisi. Quisque pharetra lobortis finibus. Vivamus fringilla lacus nec orci malesuada interdum. Ut porttitor efficitur enim eget dignissim. Phasellus ut dolor vel lorem volutpat cursus. Phasellus commodo justo dolor, sed auctor sapien condimentum in. Nullam arcu justo, sagittis eget tristique eu, gravida eu neque.
+
+Etiam ut libero id ipsum malesuada rhoncus. Nam non iaculis erat. Integer eget diam ac felis porta sodales non eget tortor. Quisque dapibus dolor ac ipsum dignissim placerat. Etiam sit amet justo orci. Integer fermentum pharetra enim, quis consequat augue lobortis ut. In gravida fermentum turpis, nec feugiat elit. Donec a quam vel quam egestas placerat. Sed lacinia in sem et placerat. Ut laoreet neque elit, id interdum magna blandit pretium. Donec tincidunt ullamcorper est. Suspendisse porta justo eget nulla elementum ullamcorper.
+
+Sed fringilla sed lorem commodo vehicula. Morbi eget feugiat enim. Donec et sagittis velit. Nulla congue elit dignissim nibh faucibus, id facilisis nunc dapibus. Quisque nibh neque, dictum sed pulvinar quis, egestas id nunc. Integer dolor augue, euismod nec varius at, cursus vel nulla. Aliquam erat volutpat. Mauris sit amet ultrices nulla. Nam ut lectus scelerisque, sagittis quam vel, sollicitudin sapien. Sed sagittis massa sed justo mattis interdum. Donec a augue enim. Suspendisse dolor ipsum, viverra nec justo vel, laoreet facilisis sapien. Sed ut orci sapien. Phasellus ultricies libero elit, vel tempor purus commodo ut."
+,
+"Number 3" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque sit amet rhoncus libero, et ullamcorper erat. In fringilla, felis vel molestie bibendum, ligula massa ullamcorper quam, id lacinia ex est ut sem. Vestibulum at viverra augue. Quisque elit eros, rhoncus nec commodo ut, pellentesque id sem. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Vestibulum eget aliquet nisl. Nullam magna felis, porttitor a fringilla aliquam, porttitor ut diam. Etiam pharetra egestas lobortis. Nunc ac tempor enim.
+
+Sed fermentum eget ipsum ut suscipit. Phasellus suscipit scelerisque orci vitae fermentum. Aliquam nec massa eu lorem egestas mattis. Nulla ac eros dolor. Nulla ac sapien orci. Vivamus tristique sem metus, sed fermentum leo mattis vitae. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus ut molestie justo, eget porta mi. Cras sodales sed nunc a congue. Nam eget tincidunt lectus, et volutpat magna. Sed semper sollicitudin risus, eu vehicula ex elementum eu. Donec dictum, purus venenatis scelerisque porta, tellus metus dignissim leo, sit amet mattis orci nibh eget eros. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nam consequat turpis odio, et ullamcorper velit tempus pellentesque.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc malesuada, enim ut mollis ornare, ligula tellus feugiat est, eget viverra orci massa sed purus. Pellentesque ut nisl dolor. Cras malesuada consequat ullamcorper. Duis neque nisl, finibus sit amet volutpat nec, pharetra sit amet leo. Cras sed eleifend nibh. Suspendisse convallis dignissim orci vitae auctor. Etiam viverra metus a ante pharetra, sed facilisis arcu varius. Mauris eu dui vestibulum, blandit risus suscipit, consectetur ligula. Morbi in laoreet libero, a ullamcorper felis. Donec commodo hendrerit maximus. Sed eu ornare orci. Phasellus nec sem velit."
+
+		], "test");
+		echo $tabs->get();
+		
+		echo Theme::container(Theme::modal("Modal content", "modal", "test")->get().Theme::modal_button("Open modal", "modal", "test")->get(), "test")->get();
+		
+		echo Theme::container(Theme::slider([$img1, $img1, $img1], "test"), "test")->get();
+		
+		$teller1 = Theme::container("Tell level 1", "test");
+		$teller2 = Theme::container("Tell level 2", "test");
+		$teller3 = Theme::container("Tell level 3", "test");
+		$teller4 = Theme::container("Tell level 4", "test");
+		Theme::tell($teller1, 1, "test");
+		Theme::tell($teller2, 2, "test");
+		Theme::tell($teller3, 3, "test");
+		Theme::tell($teller4, 4, "test");
+		echo Theme::container(Theme::grid([[$teller1, $teller2, $teller3, $teller4]], "test"), "test")->get();
+		echo Theme::container(Theme::grid([[Theme::badge("Orange badge", "test", ["color" => "orange"]), Theme::badge("Red badge", "test", ["color" => "red"]), Theme::badge("Green badge", "test", ["color" => "green"]), Theme::badge("Blue badge", "test", ["color" => "blue"]), Theme::badge("5", "test", ["new" => true])]], "test"), "test")->get();
+		echo Theme::container(Theme::breadcrumbs(["Root" => "#1", "Base" => "#2", "Sub" => "#3", "Top" => "#4"], "test"), "test")->get();
+		echo Theme::container(Theme::accordion(["A" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus leo ligula, venenatis vel finibus at, feugiat a augue. Sed pretium turpis elementum mi ornare, mattis efficitur leo ultrices.", "B" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus leo ligula, venenatis vel finibus at, feugiat a augue. Sed pretium turpis elementum mi ornare, mattis efficitur leo ultrices.", "C" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus leo ligula, venenatis vel finibus at, feugiat a augue. Sed pretium turpis elementum mi ornare, mattis efficitur leo ultrices.", "D" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus leo ligula, venenatis vel finibus at, feugiat a augue. Sed pretium turpis elementum mi ornare, mattis efficitur leo ultrices."], "test"), "test")->get();
+		
+		echo Theme::panel("Panel title", "Panel content.", "test")->get();
+		echo Theme::card("Card content", "test")->get();
+		
+		echo Theme::loader("test")->get();
+		
+		echo Theme::container(Theme::input_check("Checkbox", "test")->get().
+		Theme::input_date("2017-01-26", "test")->get().
+		 Theme::input_file("test")->get().
+		Theme::input_radio(["Radio 1" => "Value 1", "Radio 2" => "Value 2", "Radio 3" => "Value 3"], "Radio", "test")->get().
+		Theme::input_select(["Select 1" => "Value 1", "Select 2" => "Value 2", "Select 3" => "Value 3"], "test")->get().
+		Theme::input_submit("Submit", "test")->get().
+		Theme::input_text("", "Placeholder", "test")->get().
+		Theme::input_range(0, 100, "test")->get(), "test")->get();
+	});
+});
+onEvent("ready", function () {
+	Console_Register(CmdViewTheme());
 	Console_Register(CmdExportTheme());
 	Console_Register(CmdImportTheme());
 });

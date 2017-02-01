@@ -14,11 +14,9 @@ $_PROCESSES;
 * \ingroup Proccess
 * This function is used to add an event hook for when the provided proccess is called.
 * 
-* Information:
-* 	- Return: void
-* 	- Author: Echorial
-* 	- Date: Unkown
-* 	- Version: 1.0
+* @param string $name The name of the proccess to listen for.
+* @param callable $callback The function to call when the proccess is fired.
+* 
 */
 function onProcess($name, callable $callback){
 	global $_PROCESSES;
@@ -29,13 +27,11 @@ function onProcess($name, callable $callback){
 * \ingroup Proccess
 * This function is used to inkove a proccess event.
 * 
-* <div class="warning">Never call this function. Use callEvent() and onEvent() to handle events.</div>
+* <div class="warning">Try not to call this function. Use callEvent() and onEvent() to handle events.</div>
 * 
-* Information:
-* 	- Return: void
-* 	- Author: Echorial
-* 	- Date: Unkown
-* 	- Version: 1.0
+* @param string $name The proccess name.
+* @param array(key/value) $params The params to pass.
+* 
 */
 function fireProcessEvent($name, $params){
 	global $_PROCESSES;
@@ -44,20 +40,19 @@ function fireProcessEvent($name, $params){
 
 /**
 * \ingroup Proccess
-* This function is used to retrive a url to run a certain proccess.
-* <br>
-* The `fullUrl` option will return a full url including the host.
+* This function will return a string url that when visted will run the proccess with the $params.
 * 
-* Information:
-* 	- Return: string
-* 	- Author: Echorial
-* 	- Date: Unkown
-* 	- Version: 1.0
+* @param string $name The proccess name.
+* @param array(key/value) $params The params to pass.
+* @param bool $fullUrl If the link should be a full url with the Host. If false the link will be local.
+* 
 */
 function createProcessLink($name, $params, $fullUrl = true) {
 	$vars = '';
-	foreach ($params as $p => $v){
-	$vars .= $p.'='.$v.'&';}
+	
+	foreach ($params as $p => $v)
+		$vars .= $p.'='.$v.'&';
+		
 	return (($fullUrl) ? Host : '').'/p.php?p='.$name.'&'.rtrim($vars, '&');
 }
 

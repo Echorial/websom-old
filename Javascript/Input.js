@@ -1,12 +1,8 @@
-
-
-onEvent("themeReady", function () {
-	$(document).on('submit', 'websform', function () {
-		Websform.post($(this));
-	});
-
-	$("websform").each(function () {
+window.Websom.Input = {};
+window.Websom.Input.buildForms = function (lookin = $("body")) {
+	lookin.find("websform:not([data-loaded])").each(function () {
 		var f = $(this);
+		f.attr("data-loaded", "true");
 		var inputs = window["InputForms"][f.attr("name")];
 		
 		var loadData = {};
@@ -27,12 +23,19 @@ onEvent("themeReady", function () {
 		if (f.hasAttr("submit-on-start"))
 			f.trigger('submit');
 	});
-	
-	CallEventHook("themeReload", $(document));
+};
+
+onEvent("themeReady", function () {
+	$(document).on('submit', 'websform', function () {
+		Websform.post($(this));
+	});
 	
 	$(document).on('click', 'websform input[type=submit]:not([disabled])', function () {
 		$(this).closest("websform").trigger('submit');
 	});
+	
+	CallEventHook("themeReload", $(document));
+	window.Websom.Input.buildForms();
 });
 
 
@@ -101,7 +104,6 @@ Websform = {
 				$form: $(_form)
 			});
 		
-		
 		var formData = Websform.build.whole(_form, devents);
 		
 		if ("post" in devents)
@@ -109,7 +111,6 @@ Websform = {
 				$form: $(_form),
 				data: formData
 			});
-		
 		
 		if (formData !== false)
 			$.ajax({

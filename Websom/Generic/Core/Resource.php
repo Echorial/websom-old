@@ -58,16 +58,24 @@ class Resources {
 	* \endcode
 	*
 	* The options in info are:
-	* 	- string path(optional): The local path at which the file is located.
-	* 	- string url(optional): The url where the file is located.
+	* 	- string path(required): The local path at which the file is located.
+	* 	- string external(default: false): If the path is an external url
 	* 	- string register(optional): The code or module that registered this resource.
 	* 	- string type(required): The type of resource. values: "javascript", "stylesheet"
 	* 	- integer index(default: 0): The z-index for when the resource will be included. Higher means closer to the top.
-	*
-	*
-	*
 	*/
 	public static function Register($info) {
+		if (!isset($info["external"]))
+			$info["external"] = false;
+		
+		if (!isset($info["index"]))
+			$info["index"] = 0;
+		
+		if (!isset($info["register"]))
+			$info["register"] = "none";
+		
+		
+		
 		array_push(self::$resourceList, self::checkIndex($info));
 	}
 	
@@ -90,17 +98,25 @@ class Resources {
 	* \param string $register The code or module that registered the file(s).
 	* \param string $recursive If sub directories should be included as well.
 	*/
-	public static function Register_All($path, $register = 'Resources', $recursive = true) {
+	public static function Register_All($path, $register = 'Resources', $recursive = true, $basePath = false) {
 		if (substr($path, -1) != '/') $path .= '/';
 		$ignore = [];
 		if (isset(self::$pathignore[$path])) $ignore = self::$pathignore[$path];
 		if (file_exists($path.'resourceignore.json')) $ignore = array_merge($ignore, json_decode(file_get_contents($path.'resourceignore.json'), true));
+		if (file_exists($path.'resourceindex.json')) $indexA = array_merge($ignore, json_decode(file_get_contents($path.'resourceindex.json'), true));
+		
 		$direcetory = new DirectoryIterator($path);
 		
 		foreach ($direcetory as $file) {
 			
 			if (!$file->isDot()) {
-				$cpath = $path.$file->getFilename();
+				$cpath;
+				if ($basePath === false) {
+					$cpath = $path.$file->getFilename();
+				}else{
+					$cpath = $basePath.$file->getFilename();
+				}
+				
 				if (self::check($file->getFilename(), $ignore) == false) continue;
 				if ($file->isDir()) {
 					if (!$recursive) continue;
@@ -112,12 +128,19 @@ class Resources {
 						$type = 'stylesheet';
 					else if($ext == 'js')
 						$type = 'javascript';
+					else if($ext == 'php')
+						$type = 'module';
+					
+					$idex = 0;
+					if (isset($indexA[$file->getFilename()]))
+						$idex = $indexA[$file->getFilename()];
+					
 					self::Register([
 						'register' => $register,
 						'external' => false,
 						'path' => $cpath,
 						'type' => $type,
-						'index' => 0
+						'index' => $idex
 					]);
 				}
 			}
@@ -182,6 +205,20 @@ class Resources {
 		foreach ($s as $resource) {
 			if ($resource['type'] == 'javascript')
 				$rtn .= "<script src='".self::getPath($resource)."'></script>";
+		}
+		
+		return $rtn;
+	}
+	
+	/**
+	* This is called by websom itself to include modules.
+	*/
+	public static function getModules(callable $cback) {
+		$rtn = "";
+		$s = self::sortByIndex();
+		foreach ($s as $resource) {
+			if ($resource['type'] == 'module')
+				$cback($resource);
 		}
 		
 		return $rtn;

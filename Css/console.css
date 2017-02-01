@@ -18,7 +18,7 @@
 	height: 100%;
 }
 
-body, html {
+main, body, html {
 	height: 100%;
 	overflow: hidden;
 	margin: 0;

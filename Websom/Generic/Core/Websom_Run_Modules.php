@@ -24,12 +24,9 @@ $LoadedViews;
 //Create the module table reference\\
 $ModuleTables = array();
 
-//Create a new directory iterator to run modules\\
-$Modules = new DirectoryIterator(Websom_root."/Website/Modules");
-
-//Just doing some dependent Module garbage\\
 if (file_exists(Websom_root."/Website/Modules/Object.php")){
 	include(Websom_root."/Website/Modules/Object.php");
+	
 	Load_Configs('Object');
 	
 	$LoadedModules['Object'] = CallFunction("Object_Status");	
@@ -38,15 +35,74 @@ if (file_exists(Websom_root."/Website/Modules/Object.php")){
 	//Create the module storage reference\\
 	Structure_Create("websom_reference", "`id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`), `module` varchar(256)");
 	
+	
+	//Create the module storage reference\\
+	Structure_Create("websom_reference", "`id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`), `module` varchar(256)");
+	
+	
 	$finder = new Data_Finder(true);
 	$modTableSort = Data_Select("websom_reference", $finder);
 	foreach ($modTableSort as $Row){
 		$ModuleTables[$Row['module']] = "m".$Row['id'];
 	}
-
 }else{
 	Error('Module', 'Cannot find object module in '.Websom_root.'/Modules.', true);
 }
+
+Resources::Register_All(Websom_root."/Website/Modules", "Module_Loader", false);
+
+Resources::getModules(function ($resource) {
+	if ($resource["path"] == "Object.php") return;
+	
+	$ModuleName = basename($resource["path"], ".php");
+	
+	//Call proper module config functions\\
+	Load_Configs($ModuleName);
+		
+	
+	//Call Init on each module\\
+	
+	$LoadedModules[$ModuleName] = CallFunction($ModuleName."_Status");
+	
+	
+	//Set module widgets up\\
+	if (CallFunction($ModuleName."_Get_Widgets") !== false){
+		$LoadedWidgets[$ModuleName] = array();
+		
+		foreach(CallFunction($ModuleName."_Get_Widgets") as $WidgetName){
+			array_push($LoadedWidgets[$ModuleName], array($ModuleName, $WidgetName));
+		}
+	}
+	
+	//Set module controls up\\
+	if (CallFunction($ModuleName."_Get_Controls") !== false){
+		$LoadedControls[$ModuleName] = array();
+		
+		foreach(CallFunction($ModuleName."_Get_Controls") as $ControlName){
+			array_push($LoadedControls[$ModuleName], array($ModuleName, $ControlName));
+		}
+	}
+	
+	//Set module views up\\
+	if (CallFunction($ModuleName."_Get_Views") !== false){
+		$LoadedViews[$ModuleName] = array();
+		foreach(CallFunction($ModuleName."_Get_Views") as $ViewName)
+			array_push($LoadedViews[$ModuleName], array($ModuleName, $ViewName));
+	}
+	
+	//Get module information\\
+	if (($module_info = CallFunction($ModuleName."_Info")) !== false){
+		Websom::$Modules[$ModuleName] = [
+			'info' => $module_info,
+			'status' => $LoadedModules[$ModuleName]
+		];
+	}
+});
+
+/* Old replaced on 12/28/16
+//Create a new directory iterator to run modules\\
+$Modules = new DirectoryIterator(Websom_root."/Website/Modules");
+
 
 foreach ($Modules as $Module) {
 	if (!$Module->isDot()) {
@@ -97,6 +153,7 @@ foreach ($Modules as $Module) {
 		}
 	}
 }
+*/
 
 callEvent('modulesLoaded');
 
@@ -249,12 +306,24 @@ function Reload_Modules() {
 				continue;
 			}
 			foreach ($tbls as $tableName => $tableColumns){
-				Structure_Create("m".$Id.'_'.$tableName, "`id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`) ".StructureColumns($tableColumns));
+				$strToIn = "";
+				if (!is_array($tableColumns)) {
+					$strToIn = "`id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`) , ".$tableColumns;
+				}else{
+					if ($tableColumns[1] == true) {
+						$strToIn = "`id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`) , ".$tableColumns[0];
+					}else{
+						$strToIn = $tableColumns[0];
+					}
+				}
+				Structure_Create("m".$Id.'_'.$tableName, $strToIn);
 				$msgs .= '\n Loaded '.$ModuleName.'.'.$tableName;
 			}
 			$msgs .= '\n [Loaded '.$ModuleName.']\n';
 		}
 	}
+	
+	callEvent("reload");
 	
 	return $msgs;
 }
