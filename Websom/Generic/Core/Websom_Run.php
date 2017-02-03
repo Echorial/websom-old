@@ -7,7 +7,6 @@ if ($docChars[count($docChars)-1] == '/'){
 }
 
 
-
 /**
 * \defgroup Globals Globals
 * These globals can be used all throughout websom
@@ -27,6 +26,10 @@ if ($docChars[count($docChars)-1] == '/'){
 define("Websom_root", $docRoot.'/Websom');
 define("Document_root", $docRoot);
 define("Document_root_local", '/');
+
+if (!file_exists(Document_root.'/Config/')) {
+	mkdir(Document_root.'/Config/');
+}
 
 $hostGot = $_SERVER['HTTP_HOST'];
 define("Host", 'http://'.$hostGot);
