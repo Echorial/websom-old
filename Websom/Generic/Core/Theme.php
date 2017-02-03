@@ -603,7 +603,8 @@ interface iTheme {
 	* Use iTheme::navigation_link() for adding link to this bar.
 	* 
 	* @param array $content 
-	* 		Example: 
+	* 
+	*	Example: 
 	* 		\code
 	* 		$content = [
 	* 			"id" => "mainNavBar", //The id for this navigation bar. (We will use this latter)
@@ -670,7 +671,7 @@ interface iTheme {
 	* This is a dialog that will open when a iTheme::modal_button with the same $id is clicked.
 	* 
 	* @param string/element $content The content of the modal
-	* @param string $id A unique identifier for this modal.
+	* @param string               $id          A unique identifier for this modal.
 	* 
 	* Options:
 	* 	- (string) class: The button class.

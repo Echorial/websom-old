@@ -85,7 +85,8 @@ class Resources {
 			return true;
 		};
 		foreach (self::$resourceList as $i => $resource) {
-			if (isset($resource['url'])) if ($resource['url'] == $place) {$doToIt(self::$resourceList[$i]);}
+			if (isset($resource['url'])) if ($resource['url'] == $place) {$doToIt(self::$resourceList[$i]);return;}
+			if (isset($resource['recurPath'])) if ($resource['recurPath'] == $place) {$doToIt(self::$resourceList[$i]);return;}
 			if (isset($resource['path'])) if ($resource['path'] == $place) {$doToIt(self::$resourceList[$i]);}
 		}
 		return false;
@@ -111,10 +112,13 @@ class Resources {
 			
 			if (!$file->isDot()) {
 				$cpath;
+				$recurPath;
 				if ($basePath === false) {
 					$cpath = $path.$file->getFilename();
+					$recurPath = $cpath;
 				}else{
 					$cpath = $basePath.$file->getFilename();
+					$recurPath = $path.$file->getFilename();
 				}
 				
 				if (self::check($file->getFilename(), $ignore) == false) continue;
@@ -140,7 +144,8 @@ class Resources {
 						'external' => false,
 						'path' => $cpath,
 						'type' => $type,
-						'index' => $idex
+						'index' => $idex,
+						"recurPath" => $recurPath
 					]);
 				}
 			}
