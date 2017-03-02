@@ -1,4 +1,4 @@
-<p align="center"><img src="http://echorial.com/Images/Websom/l128.png" /></p>
+<p align="center"><img src="http://www.echorial.com/Images/Products/Websom/l128.png" /></p>
 # Websom
 Websom is a high level php framework built from the ground up with speed, modularity, ease, and fun in mind.
 Websom comes with a number of nice easy to use features, here are just a few:
@@ -18,7 +18,7 @@ Websom comes with a number of nice easy to use features, here are just a few:
 * A basic understanding of php.
 
 #### Download:
-* Download the websom installer from [this page](http://www.echorial.com/websom.php).
+* Download the websom installer from [this page](http://www.echorial.com/Websom/).
 * Then move the downloaded php file into your server www directory.
 
 #### Installation:
@@ -31,9 +31,9 @@ Websom comes with a number of nice easy to use features, here are just a few:
 * This should output a version number.
 
 #### Learn:
-* Use the resources tab on [this page](http://www.echorial.com/websom.php) to view tutorials and documentation.
+* Use the resources tab on [this page](http://www.echorial.com/Websom/) to view tutorials and documentation.
 
 ## License
 websom is licensed under the Mit license.
 
-[logo]: http://echorial.com/Images/Websom/l128.png
+[logo]: http://www.echorial.com/Images/Products/Websom/l128.png
