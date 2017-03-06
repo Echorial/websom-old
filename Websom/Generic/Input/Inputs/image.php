@@ -172,8 +172,9 @@ class Image extends Input {
 	function send() {
 		return 'var files = window.Websom.Theme.get($(element));
 		var newFiles = [];
-		for (var i = 0; i < files.length; i++)
-			newFiles.push(files[i][0]);
+		for (var i = 0; i < files.length; i++) {
+			newFiles.push(files[i][0].split(",")[1]);
+		}
 		return newFiles;';
 	}
 	
@@ -223,7 +224,11 @@ class Image extends Input {
 				return "Image ".$ind." is too large in size(".($size/1024)."kb). The maximum size is ".($this->max_size/1024)."kb.";
 			}
 			
-			$image = imagecreatefromstring(base64_decode($img));
+			$base64 = base64_decode($img);
+			if ($base64 === false) {
+				return "Image ".$ind." is not formated correctly.";
+			}
+			$image = imagecreatefromstring($base64);
 			
 			if ($image === false)
 				return "Image ".$ind." is not formated correctly.";

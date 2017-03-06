@@ -34,12 +34,12 @@ function Page($f){
 	return true;
 }
 
-/* -
+/**
 * \ingroup PageFunctions
 * 
 * Use this function to insert a string into the html structure.
 *
-* <div class="warning">This will search the structure for $tag and add $what into the found place. If the tag and or place is not found nothing will happen.</div>
+* \warning This will search the structure for $tag and add $what into the found place. If the tag and or place is not found nothing will happen.
 *
 * Example:
 * \code
@@ -70,6 +70,10 @@ function Inject($tag, $place, $what) {
 		}
 	}
 	SetPropertie($tag.':'.$place, $add);
+}
+
+if (Websom::$Config["Should_Add_Base_Tag"] == "yes") {
+	Inject("head", "top", "<base href='".Host."/' />");
 }
 
 include(Websom_root."/Generic/Core/Page_Functions.php");
