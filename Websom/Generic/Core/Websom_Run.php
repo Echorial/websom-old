@@ -20,12 +20,14 @@ if ($docChars[count($docChars)-1] == '/'){
 * 	- Host: The complete website url.
 * 	- Website_name: The name of the website.
 * 	- Modules_root: The modules directory.
-*
+*	- Current_Page: The current page name. It is $_SERVER['REQUEST_URI']
+*	- Current_Url: The host+current page name.
 */
 
 define("Websom_root", $docRoot.'/Websom');
 define("Document_root", $docRoot);
 define("Document_root_local", '/');
+define("Current_Page", $_SERVER['REQUEST_URI']);
 
 if (!file_exists(Document_root.'/Config/')) {
 	mkdir(Document_root.'/Config/');
@@ -33,9 +35,6 @@ if (!file_exists(Document_root.'/Config/')) {
 
 $hostGot = $_SERVER['HTTP_HOST'];
 define("Host", 'http://'.$hostGot);
-
-
-
 
 define("Modules_root", Websom_root.'/Website/Modules');
 
@@ -151,10 +150,11 @@ if (!defined("Local_root"))
 if (!defined("Client_root"))
 	define("Client_root", Host."/");
 
+define("Current_Url", Host.Current_Page);
+
 Str::init();
 Websom::$Version = '1.5';
 Websom::$Live = (Websom::$Config['live'] == "yes" ? true : false);
-
 //Session start moved to the Session core.
 
 //For stopping the page echo\\
