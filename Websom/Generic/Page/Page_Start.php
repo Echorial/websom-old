@@ -14,7 +14,11 @@ function SetPropertie($p, $v){
 
 function GetPropertie($p){
 	global $Properties;
-	$Properties[$p];
+	if (isset($Properties[$p])) {
+		return $Properties[$p];
+	}else{
+		return false;
+	}
 }
 
 function GetProperties(){
@@ -61,15 +65,15 @@ function Page($f){
 */
 function Inject($tag, $place, $what) {
 	$add = $what;
-	$prop = GetPropertie($tag);
-	if (isset($prop)) {
+	$prop = GetPropertie($tag.":".$place);
+	if ($prop !== false) {
 		if ($place == 'top'){
 			$add .= $prop;
 		}else{
 			$add = $prop.$add;
 		}
 	}
-	SetPropertie($tag.':'.$place, $add);
+	SetPropertie($tag.":".$place, $add);
 }
 
 if (Websom::$Config["Should_Add_Base_Tag"] == "yes") {
