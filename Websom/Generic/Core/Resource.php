@@ -109,8 +109,9 @@ class Resources {
 		$direcetory = new DirectoryIterator($path);
 		
 		foreach ($direcetory as $file) {
-			
 			if (!$file->isDot()) {
+				if ($file->getFilename() == "resourceignore.json" OR $file->getFilename() == "resourceindex.json")
+					continue;
 				$cpath;
 				$recurPath;
 				if ($basePath === false) {

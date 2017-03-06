@@ -278,7 +278,8 @@ function Display_Views(){
 
 //New module loading code\\ 
 function Reload_Modules() {
-	$msgs = '';
+	$msgs = '
+ ';
 	
 	function StructureColumns($a=array()){
 		$r = '';
@@ -296,6 +297,9 @@ function Reload_Modules() {
 
 	foreach ($Wbsm_Modules as $mod) {
 		if (!$mod->isDot()) {
+			if (pathinfo($mod->getFilename(), PATHINFO_EXTENSION) == "json")
+				continue;
+			
 			$ModuleName = basename($mod->getFilename(), ".php");
 			//Start loading module\\ 
 			$finder = new Data_Finder();
