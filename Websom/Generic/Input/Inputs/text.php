@@ -220,15 +220,11 @@ class Text extends Input {
 	}
 	
 	function send() {
-		return '
-		return window.Websom.Theme.get($(element));
-		';
+		return 'return window.Websom.Theme.get($(element));';
 	}
 	
 	function validate_client() {
-		return "
-		
-		var value = window.Websom.Theme.get($(element));
+		return "var value = window.Websom.Theme.get($(element));
 		if ($(element).attr('blank') == '0' && value == '')
 		return 'Cannot be blank.';
 	

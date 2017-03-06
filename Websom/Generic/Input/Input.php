@@ -386,7 +386,7 @@ onEvent('endAfter', function () {
 				}');
 				continue;
 			}
-			array_push($set, $name.': function (element, name, error) {
+			array_push($set, $name.': function (element, name, error, later) {
 				'.$event.'
 			}');
 		}
@@ -976,14 +976,19 @@ class Input_List extends Input {
 */
 class Structure {
 	public $html = '';
+	public $callback = false;
 	
 	/**
 	* This will create a new Structure object containing the $html string.
 	*
-	* \param string $html The html string to structure.
+	* \param string/function $html The html string to structure. Or pass a function in and when the structure is used the function will be called with the array of params.
 	*/
 	function __construct($html) {
-		$this->html = $html;
+		if (is_callable($html)) {
+			$this->callback = $html;
+		}else{
+			$this->html = $html;
+		}
 	}
 	
 	/**
@@ -1011,13 +1016,17 @@ class Structure {
 	* \param string $data The associative array to use.
 	*/
 	function get($data) {
-		$rtn = $this->html;
-		
-		foreach ($data as $key => $value) {
-			$rtn = str_replace('%'.$key.'%', $value, $rtn);
+		if ($this->callback === false) {
+			$rtn = $this->html;
+			
+			foreach ($data as $key => $value) {
+				$rtn = str_replace('%'.$key.'%', $value, $rtn);
+			}
+			
+			return $rtn;
+		}else{
+			return call_user_func($this->callback, $data);
 		}
-		
-		return $rtn;
 	}
 }
 

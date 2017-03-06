@@ -38,6 +38,11 @@ class Linker extends Hookable {
 		$cfg = Config::Get("PageLinker", ";This is the map for page linking.
 		Console = \"console.php\"");
 		
+		foreach ($cfg as $k => $v) {
+			if (strpos($v, "http://") === false AND strpos($v, "https://") === false)
+				$cfg[$k] = Format_Link($v);
+		}
+		
 		self::$links = $cfg;
 	}
 	
