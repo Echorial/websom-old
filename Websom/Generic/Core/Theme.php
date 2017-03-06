@@ -849,11 +849,12 @@ function CmdExportTheme () {
 	$cmd->call = function ($params, $flags) {
 		$exp = new Theme_Exporter(Document_root.'/ExportedThemes', $params['themeName']);
 		$exp->addFile(Websom_root.'/Website/Themes/'.$params['themeName'].'.php', 'Theme');
-		
+		if (isset($flags['JavascriptFiles']))
 		foreach ($flags['JavascriptFiles'] as $js) {
 			$exp->addFile(trim($js['filePath'], '/'), 'Javascript', ($js['optional'] == 'true') ? false : true, $js['description']);
 		}
 		
+		if (isset($flags['CssFiles']))
 		foreach ($flags['CssFiles'] as $css) {
 			$exp->addFile(trim($css['filePath'], '/'), 'Css', ($css['optional'] == 'true') ? false : true, $css['description']);
 		}
