@@ -257,6 +257,11 @@ class Theme {
 		return self::$theme->navigation_show($content, $id, self::mergeRules(self::getRule('navigation_show', $label), $options));
 	}
 	
+	static public function reveal($start, $show, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->reveal($start, $show, self::mergeRules(self::getRule('reveal', $label), $options));
+	}
+	
 }
 
 Theme::run();
@@ -736,6 +741,11 @@ interface iTheme {
 	*
 	*/
 	public function tell(&$element, $level, $options);
+	
+	/**
+	* A reveal is a container that shows the $start initially and when an element under the $start with a class of theme-reveal-show is clicked the $show will replace the $start and vise versa.
+	*/
+	public function reveal($start, $show, $options);
 }
 
 
