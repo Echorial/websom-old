@@ -15,8 +15,3 @@ Css/
 !Css/console.css
 !Css/websom.css
 !Css/resourceignore.json
-
-./
-
-!./console.php
-!./p.php
