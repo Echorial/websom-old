@@ -603,7 +603,8 @@ interface iTheme {
 	* Use iTheme::navigation_link() for adding link to this bar.
 	* 
 	* @param array $content 
-	* 		Example: 
+	* 
+	*	Example: 
 	* 		\code
 	* 		$content = [
 	* 			"id" => "mainNavBar", //The id for this navigation bar. (We will use this latter)
@@ -670,7 +671,7 @@ interface iTheme {
 	* This is a dialog that will open when a iTheme::modal_button with the same $id is clicked.
 	* 
 	* @param string/element $content The content of the modal
-	* @param string $id A unique identifier for this modal.
+	* @param string               $id          A unique identifier for this modal.
 	* 
 	* Options:
 	* 	- (string) class: The button class.
@@ -848,11 +849,12 @@ function CmdExportTheme () {
 	$cmd->call = function ($params, $flags) {
 		$exp = new Theme_Exporter(Document_root.'/ExportedThemes', $params['themeName']);
 		$exp->addFile(Websom_root.'/Website/Themes/'.$params['themeName'].'.php', 'Theme');
-		
+		if (isset($flags['JavascriptFiles']))
 		foreach ($flags['JavascriptFiles'] as $js) {
 			$exp->addFile(trim($js['filePath'], '/'), 'Javascript', ($js['optional'] == 'true') ? false : true, $js['description']);
 		}
 		
+		if (isset($flags['CssFiles']))
 		foreach ($flags['CssFiles'] as $css) {
 			$exp->addFile(trim($css['filePath'], '/'), 'Css', ($css['optional'] == 'true') ? false : true, $css['description']);
 		}

@@ -26,7 +26,13 @@ class Email extends Hookable {
 	static public function init() {
 self::$config = Config::Get("Email", 'enabled = "on" ;`on` or `off`
 dev_folder = "Websom/Website/Emails/" ;The folder(path from Document_root) where emails sent will be while website is not `live`
-no_reply = "noreply@example.com" ;The account that should be used to send non reply emails. This is used by modules.');
+no_reply = "noreply@example.com" ;The account that should be used to send non reply emails. This is used by modules.
+no_reply_password = "password"
+use_php_mailer = "true"
+host = "myserver"
+type = "ssl"
+port = 995
+display_errors = "false"');
 	}
 	
 	/**
@@ -63,8 +69,8 @@ no_reply = "noreply@example.com" ;The account that should be used to send non re
 		$this->headers = [];
 		if ($from === true) {
 			$this->from = self::$config["no_reply"];
-			$this->customFrom = Website_name." <".self::$config["no_reply"].">";
-			$this->addHeader("Reply-To", Website_name." <".self::$config["no_reply"].">");
+			$this->customFrom = Websom::$Config["Website_name"]." <".self::$config["no_reply"].">";
+			$this->addHeader("Reply-To", Websom::$Config["Website_name"]." <".self::$config["no_reply"].">");
 		}else{
 			$this->from = $from;
 		}
@@ -82,6 +88,37 @@ no_reply = "noreply@example.com" ;The account that should be used to send non re
 	*/
 	public function addHeader($key, $value) {
 		$this->headers[$key] = $value;
+	}
+	
+	static public function testMailForm() {
+		$form = new Form("testMailForm");
+		$to = new Text();
+		$to->placeholder = "To";
+		$form->addInput("to", $to);
+		
+		$sub = new Text();
+		$sub->placeholder = "Subject";
+		$form->addInput("subject", $sub);	
+		
+		$body = new Text("multiline");
+		$body->placeholder = "Body";
+		$form->addInput("body", $body);
+		
+		$form->structure = new Structure(Theme::container("%to%<br>%subject%<br>%body%<br>".Theme::input_submit("Send", "Email")->get(), "Email")->get());
+		
+		$form->on("success", function ($d) {
+			$m = new Email(true, $d["subject"], $d["body"]);
+			$s = $m->send([$d["to"]]);
+			if ($s) {
+				return Message::QuickSuccess("Sent.");
+			}else{
+				return Message::QuickError("Did not send.");
+			}
+		});
+		
+		$form->check();
+		
+		return $form->get();
 	}
 	
 	/**
@@ -111,11 +148,44 @@ no_reply = "noreply@example.com" ;The account that should be used to send non re
 		}
 		
 		if (Websom::$Live) {
-			$success = [];
-			foreach ($emails as $address) {
-				$success[$address] = mail($address, $this->subject, $this->body, $headers);
+			
+			if (self::$config["use_php_mailer"] == "true") {
+				require_once Document_root."/vendor/autoload.php";
+				$mail = new PHPMailer;
+
+				$mail->isSMTP();
+				$mail->Host = self::$config["host"];
+				$mail->SMTPAuth = true;
+				$mail->Username = self::$config["no_reply"];
+				$mail->Password = self::$config["no_reply_password"];
+				$mail->SMTPSecure = self::$config["type"];
+				$mail->Port = self::$config["port"];
+				
+				$mail->setFrom(self::$config["no_reply"], Websom::$Config["Website_name"]);
+				$mail->addReplyTo(self::$config["no_reply"], Websom::$Config["Website_name"]);
+				$mail->isHTML(true);
+
+				$mail->Subject = $this->subject;
+				$mail->Body = $this->body;
+				
+				foreach ($emails as $address) {
+					$mail->addAddress($address);
+				}
+				
+				if(!$mail->send()) {
+					if (self::$config["display_errors"] == "true")
+						echo Error("Mail", $mail->ErrorInfo);
+					return false;
+				}else{
+					return true;
+				}	
+			}else{
+				$success = [];
+				foreach ($emails as $address) {
+					$success[$address] = mail($address, $this->subject, $this->body, $headers);
+				}
+				return $success;
 			}
-			return $success;
 		}
 		
 $file = "Sent to: ".implode(",

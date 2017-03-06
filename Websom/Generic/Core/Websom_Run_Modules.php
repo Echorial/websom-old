@@ -96,6 +96,11 @@ Resources::getModules(function ($resource) {
 			'info' => $module_info,
 			'status' => $LoadedModules[$ModuleName]
 		];
+	}else{
+		Websom::$Modules[$ModuleName] = [
+			'info' => [],
+			'status' => $LoadedModules[$ModuleName]
+		];
 	}
 });
 
@@ -160,7 +165,15 @@ callEvent('modulesLoaded');
 function Load_Configs($ModuleName){
 	$ModuleConfigFunction = $ModuleName."_Config_";
 	if ($ModuleName != 'Object') {
-		include(Websom_root."/Website/Modules/".$ModuleName.'.php');
+		if ($ModuleName == "Console") {
+			include(Websom_root."/Website/Modules/".$ModuleName.'.php');
+		}else{
+			if (defined("Suppress_Modules") AND Suppress_Modules === true) {
+				@include(Websom_root."/Website/Modules/".$ModuleName.'.php') or die($php_errormsg);
+			}else{
+				include(Websom_root."/Website/Modules/".$ModuleName.'.php');
+			}
+		}
 	}
 	if (function_exists($ModuleConfigFunction.'Send') AND function_exists($ModuleConfigFunction.'Get') AND function_exists($ModuleConfigFunction.'Fail')) {
 		
@@ -230,7 +243,6 @@ function Display_Modules(){
 	}
 	echo rtrim($Echo, ", ");
 }
-
 //TODO: Move this some place else\\ 
 function Create_File ($path, $cont) {
 	$file = fopen($path, 'w');
@@ -299,10 +311,10 @@ function Reload_Modules() {
 			
 			$tbls = CallFunction($ModuleName."_Structure");
 			if (!is_array_associative($tbls) AND $tbls !== false) {
-				return 'Module '.$ModuleName.' is not cooperating. \n';
+				return '|Error| Module '.$ModuleName.' is not cooperating. \n';
 			}
 			if ($tbls === false) {
-				$msgs .= '[Loaded '.$ModuleName.'] \n';
+				$msgs .= '--- Loaded '.$ModuleName.' \n';
 				continue;
 			}
 			foreach ($tbls as $tableName => $tableColumns){
@@ -317,9 +329,9 @@ function Reload_Modules() {
 					}
 				}
 				Structure_Create("m".$Id.'_'.$tableName, $strToIn);
-				$msgs .= '\n Loaded '.$ModuleName.'.'.$tableName;
+				$msgs .= '\n + Loaded '.$ModuleName.'.'.$tableName;
 			}
-			$msgs .= '\n [Loaded '.$ModuleName.']\n';
+			$msgs .= '\n --- Loaded '.$ModuleName.'\n';
 		}
 	}
 	

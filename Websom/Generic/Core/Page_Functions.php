@@ -16,6 +16,7 @@
 */
 function Go($Location){
 	header("Location: ".$Location);
+	die();
 }
 
 
