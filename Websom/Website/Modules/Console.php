@@ -499,7 +499,7 @@ return $commandDetails;
 }
 
 
-function CmdName () {
+function CmdName() {
 	$cmd = new Console_Command('Name', 'Get the website name.');
 	$cmd->aliases = [
 		'name'
@@ -512,6 +512,22 @@ function CmdName () {
 	return $cmd;
 }
 
+function CmdModules() {
+	$cmd = new Console_Command('Modules', 'Get the loaded modules.');
+	$cmd->aliases = [
+		'modules'
+	];
+	
+	$cmd->call = function ($params, $flags) {
+		$rtn = "";
+		foreach (Websom::$Modules as $m => $v)
+			$rtn .= " - ".$m."\n";
+		return $rtn;
+	};
+	
+	return $cmd;
+}
+
 
 onEvent("ready", function () {
 	Console_Register(CmdVersion());
@@ -519,6 +535,7 @@ onEvent("ready", function () {
 	Console_Register(CmdName());
 	Console_Register(CmdInfo());
 	Console_Register(CmdHelp());
+	Console_Register(CmdModules());
 });
 
 onEvent("resourcesLoad", function () {
