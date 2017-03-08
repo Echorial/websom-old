@@ -94,6 +94,11 @@ class Theme {
 		if (self::$theme !== false)
 		return self::$theme->button($text, self::mergeRules(self::getRule('button', $label), $options));
 	}
+	
+	static public function dropdown($text, $list, $label, $options = []) {
+		if (self::$theme !== false)
+		return self::$theme->dropdown($text, $list, self::mergeRules(self::getRule('dropdown', $label), $options));
+	}
 
 	static public function grid($_2dArray, $label, $options = []){
 		if (self::$theme !== false)
@@ -312,6 +317,12 @@ interface iTheme {
 	*	- link(string): If set the button will be a link.
 	*/
 	public function button($text, $options);
+	
+
+	/**
+	* @param key/value pair $list The a list of display name(key) and link(value).
+	*/
+	public function dropdown($text, $list, $options);
 	
 	/**
 	* Return an `Element` with a grid.
