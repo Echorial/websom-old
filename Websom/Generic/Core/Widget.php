@@ -16,7 +16,7 @@
 *
 * To create custom widgets you would simply extend the Widget class and override the needed methods.
 */
-class Widget {
+class Widget extends Hookable {
 	public $Is_Widget = true;
 	public $owner = "None";
 	public $name = "Untitled_Widget";

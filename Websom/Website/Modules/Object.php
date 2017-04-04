@@ -1936,21 +1936,22 @@ class Control_Structure extends Hookable {
 	* 		Events:
 	* 			- "edit"($data, $oldData): When the client edits a row. Params: data(the new data), Return false to cancel the edit.
 	* 	- s: This will create a sortable html element with the column/control pairs soring the view.
-	* 		Options:
-	* 			- Structure "areaStructure": A Structure object that goes around the control area and view area. Variables %sort%, %view%
-	* 			- boolean "viewOnStart": If view area should show results at the start.
-	*  		- View "view"(Required): The view object that will be used to display the sorted rows. Note: Only the sub() method is used on the view.
-	*  		- array "edits": Set this to an array ["column name", some control instance] to add editing to each sub view.
-	*  		- Structure "editStructure": The structure that will be used if "edits" is set.
-	*  		- boolean "canDelete": If the user can delete the row. Note: Only works when editing is enabled. Note: Make sure to insert %cs_delete% into the edit structure if you want the button to show.
-	*  		- string "deleteText": The delete button text.
-	*  		- string "nothingMessage": The message to display when no rows are found.
-	*  		- integer "limit"(default 25): The max number of rows per page or load.
-	* 		Events:
-	* 			- "sortData"($data): This is called before the viewer creates a finder to find the data. Return the modified $data object.
-	* 			- "sortFinder"(&$finder): This is called with a reference to a finder. You can add or modify the finder.
-	* 			- "edit"($data, $oldData): When the client edits a row. Params: data(the new data), oldData(The current data of the row). Can cancel.
-	* 			- "delete"($rowData): When the client deletes a row. Can cancel.
+	* Options:
+	* 	- Structure "areaStructure": A Structure object that goes around the control area and view area. Variables %sort%, %view%
+	* 	- boolean "viewOnStart": If view area should show results at the start.
+	* 	- View "view"(Required): The view object that will be used to display the sorted rows. Note: Only the sub() method is used on the view.
+	* 	- array "edits": Set this to an array ["column name", some control instance] to add editing to each sub view.
+	* 	- Structure "editStructure": The structure that will be used if "edits" is set.
+	* 	- boolean "canDelete": If the user can delete the row. Note: Only works when editing is enabled. Note: Make sure to insert %cs_delete% into the edit structure if you want the button to show.
+	* 	- string "deleteText": The delete button text.
+	* 	- string "nothingMessage": The message to display when no rows are found.
+	* 	- integer "limit"(default 25): The max number of rows per page or load.
+	* 
+	* Events:
+	* 	- "sortData"($data): This is called before the viewer creates a finder to find the data. Return the modified $data object.
+	* 	- "sortFinder"(&$finder): This is called with a reference to a finder. You can add or modify the finder.
+	* 	- "edit"($data, $oldData): When the client edits a row. Params: data(the new data), oldData(The current data of the row). Can cancel.
+	* 	- "delete"($rowData): When the client deletes a row. Can cancel.
 	*
 	*/
 	public function __construct($options) {
@@ -2011,7 +2012,7 @@ class Control_Structure extends Hookable {
 			$e = Theme::container("", "Form.success");
 			$e->insert("Success");
 			Theme::tell($e, 1, "Form.success");
-			$m->add("form", Message::Success($e->get()));
+			//$m->add("form", Message::Success($e->get()));
 			return $m;
 		});
 	

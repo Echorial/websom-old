@@ -548,6 +548,13 @@ class Input {
 	public function load() {
 		return 'alert("Cannot load into input.");';
 	}
+	
+	/**
+	* This is called on the server when loading into a form input.
+	*/
+	public function into($val) {
+		return $val;
+	}
 }
 
 
@@ -1292,7 +1299,11 @@ class Form extends Hookable {
 	* Loads a key/value array into the form
 	*/
 	function load($data) {
-		$this->loadData = $data;
+		$set = [];
+		foreach ($data as $k => $v) {
+			$set[$k] = $this->getInput($k)->into($v);
+		}
+		$this->loadData = $set;
 	}
 	
 	/**
