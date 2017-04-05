@@ -1,0 +1,17 @@
+Config/
+
+Websom/Website/
+!Websom/Website/Modules/Object.php
+!Websom/Website/Modules/Console.php
+
+Javascript/
+!Javascript/Tools.js
+!Javascript/Theme.js
+!Javascript/main.js
+!Javascript/Input.js
+!Javascript/Form.js
+
+Css/
+!Css/console.css
+!Css/websom.css
+!Css/resourceignore.json

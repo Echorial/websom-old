@@ -94,6 +94,11 @@ class Theme {
 		if (self::$theme !== false)
 		return self::$theme->button($text, self::mergeRules(self::getRule('button', $label), $options));
 	}
+	
+	static public function dropdown($text, $list, $label, $options = []) {
+		if (self::$theme !== false)
+		return self::$theme->dropdown($text, $list, self::mergeRules(self::getRule('dropdown', $label), $options));
+	}
 
 	static public function grid($_2dArray, $label, $options = []){
 		if (self::$theme !== false)
@@ -257,6 +262,11 @@ class Theme {
 		return self::$theme->navigation_show($content, $id, self::mergeRules(self::getRule('navigation_show', $label), $options));
 	}
 	
+	static public function reveal($start, $show, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->reveal($start, $show, self::mergeRules(self::getRule('reveal', $label), $options));
+	}
+	
 }
 
 Theme::run();
@@ -307,6 +317,12 @@ interface iTheme {
 	*	- link(string): If set the button will be a link.
 	*/
 	public function button($text, $options);
+	
+
+	/**
+	* @param key/value pair $list The a list of display name(key) and link(value).
+	*/
+	public function dropdown($text, $list, $options);
 	
 	/**
 	* Return an `Element` with a grid.
@@ -503,7 +519,7 @@ interface iTheme {
 	* File input
 	*
 	* Methods: Server Prefix: input_
-	*	- get(): client only: Returns an array of base64 versions of the files.
+	*	- get(): client only: Returns an array of [base64 file, Image object]'s. Like: [["Base64 stuff", Image object], ["Base64", Image object], ect..]
 	*	- element(): Returns the real input element.
 	*
 	*
@@ -603,7 +619,8 @@ interface iTheme {
 	* Use iTheme::navigation_link() for adding link to this bar.
 	* 
 	* @param array $content 
-	* 		Example: 
+	* 
+	*	Example: 
 	* 		\code
 	* 		$content = [
 	* 			"id" => "mainNavBar", //The id for this navigation bar. (We will use this latter)
@@ -670,7 +687,7 @@ interface iTheme {
 	* This is a dialog that will open when a iTheme::modal_button with the same $id is clicked.
 	* 
 	* @param string/element $content The content of the modal
-	* @param string $id A unique identifier for this modal.
+	* @param string               $id          A unique identifier for this modal.
 	* 
 	* Options:
 	* 	- (string) class: The button class.
@@ -735,6 +752,11 @@ interface iTheme {
 	*
 	*/
 	public function tell(&$element, $level, $options);
+	
+	/**
+	* A reveal is a container that shows the $start initially and when an element under the $start with a class of theme-reveal-show is clicked the $show will replace the $start and vise versa.
+	*/
+	public function reveal($start, $show, $options);
 }
 
 
@@ -848,11 +870,12 @@ function CmdExportTheme () {
 	$cmd->call = function ($params, $flags) {
 		$exp = new Theme_Exporter(Document_root.'/ExportedThemes', $params['themeName']);
 		$exp->addFile(Websom_root.'/Website/Themes/'.$params['themeName'].'.php', 'Theme');
-		
+		if (isset($flags['JavascriptFiles']))
 		foreach ($flags['JavascriptFiles'] as $js) {
 			$exp->addFile(trim($js['filePath'], '/'), 'Javascript', ($js['optional'] == 'true') ? false : true, $js['description']);
 		}
 		
+		if (isset($flags['CssFiles']))
 		foreach ($flags['CssFiles'] as $css) {
 			$exp->addFile(trim($css['filePath'], '/'), 'Css', ($css['optional'] == 'true') ? false : true, $css['description']);
 		}

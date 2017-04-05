@@ -246,7 +246,12 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 			$this->query .= " ORDER BY `".$this->order[0]."` ".$this->order[1]." ";
 		
 		if ($this->limit !== false)
-			$this->query .= " LIMIT ".$this->limit[0].(($this->limit[1] === false)?" ":", ".$this->limit[1]." ");
+			if ($this->limit[1] !== false) {
+				$this->query .= " LIMIT ".$this->limit[1].", ".$this->limit[0];
+			}else{
+				$this->query .= " LIMIT ".$this->limit[0];
+			}
+			
 		return array(array_merge(array($this->types), $this->values), $this->query);
 	}
 	
@@ -454,7 +459,7 @@ function Data_Select ($table, $finder, $selects = '*') {
 		echo Error('Data', $Connection['Select']->error." Full query: ".$query, true);
 		return false;
 	}
-
+	
 	if (count($finder->values) > 0)
 		call_user_func_array(array($prepared, 'bind_param'), $find[0]);
 	$prepared->execute();
@@ -1717,9 +1722,7 @@ function CmdStorageSet() {
 	return $cmd;
 }
 
-onEvent('ready', function () {
-
-	
+onEvent('ready', function () {	
 	Console_Register(CmdStorageGet());
 	Console_Register(CmdStorageSet());
 	Console_Register(CmdStorageRemove());
@@ -1752,6 +1755,17 @@ class Object_Sort_Listener extends Action {
 class Control_Structure_View_Edit extends Responsive {
 	function javascript() {
 		return '
+		$(document).on("click", ".ShowMore", function () {
+			var b = $(this);
+			var sw = $(this).closest(".Object_Sort_Wrap");
+			Websom.Input.pass(sw.children("websform"), {feedme: parseInt(b.attr("data-base"))}, function(d) {
+				b.after(d.food);
+				CallEventHook("themeReload", sw);
+				window.Websom.Input.buildForms(sw);
+				b.remove();
+			});
+		});
+		
 		$(document).on("click", "[EditSort]", function () {
 			$elem = $(this).closest(".Control_Structure_View_Edit");
 			respond({a: parseInt($elem.attr("data-edit-instance")), i: parseInt($elem.attr("data-edit-index"))}, function (data) {
@@ -1922,21 +1936,22 @@ class Control_Structure extends Hookable {
 	* 		Events:
 	* 			- "edit"($data, $oldData): When the client edits a row. Params: data(the new data), Return false to cancel the edit.
 	* 	- s: This will create a sortable html element with the column/control pairs soring the view.
-	* 		Options:
-	* 			- Structure "areaStructure": A Structure object that goes around the control area and view area. Variables %sort%, %view%
-	* 			- boolean "viewOnStart": If view area should show results at the start.
-	*  		- View "view"(Required): The view object that will be used to display the sorted rows. Note: Only the sub() method is used on the view.
-	*  		- array "edits": Set this to an array ["column name", some control instance] to add editing to each sub view.
-	*  		- Structure "editStructure": The structure that will be used if "edits" is set.
-	*  		- boolean "canDelete": If the user can delete the row. Note: Only works when editing is enabled. Note: Make sure to insert %cs_delete% into the edit structure if you want the button to show.
-	*  		- string "deleteText": The delete button text.
-	*  		- string "nothingMessage": The message to display when no rows are found.
-	*  		- integer "limit"(default 25): The max number of rows per page or load.
-	* 		Events:
-	* 			- "sortData"($data): This is called before the viewer creates a finder to find the data. Return the modified $data object.
-	* 			- "sortFinder"(&$finder): This is called with a reference to a finder. You can add or modify the finder.
-	* 			- "edit"($data, $oldData): When the client edits a row. Params: data(the new data), oldData(The current data of the row). Can cancel.
-	* 			- "delete"($rowData): When the client deletes a row. Can cancel.
+	* Options:
+	* 	- Structure "areaStructure": A Structure object that goes around the control area and view area. Variables %sort%, %view%
+	* 	- boolean "viewOnStart": If view area should show results at the start.
+	* 	- View "view"(Required): The view object that will be used to display the sorted rows. Note: Only the sub() method is used on the view.
+	* 	- array "edits": Set this to an array ["column name", some control instance] to add editing to each sub view.
+	* 	- Structure "editStructure": The structure that will be used if "edits" is set.
+	* 	- boolean "canDelete": If the user can delete the row. Note: Only works when editing is enabled. Note: Make sure to insert %cs_delete% into the edit structure if you want the button to show.
+	* 	- string "deleteText": The delete button text.
+	* 	- string "nothingMessage": The message to display when no rows are found.
+	* 	- integer "limit"(default 25): The max number of rows per page or load.
+	* 
+	* Events:
+	* 	- "sortData"($data): This is called before the viewer creates a finder to find the data. Return the modified $data object.
+	* 	- "sortFinder"(&$finder): This is called with a reference to a finder. You can add or modify the finder.
+	* 	- "edit"($data, $oldData): When the client edits a row. Params: data(the new data), oldData(The current data of the row). Can cancel.
+	* 	- "delete"($rowData): When the client deletes a row. Can cancel.
 	*
 	*/
 	public function __construct($options) {
@@ -1970,6 +1985,9 @@ class Control_Structure extends Hookable {
 		if (!isset($options["noMessages"]))
 			$options["noMessages"] = false;
 		
+		if (!isset($this->options["nothingMessage"]))
+			$this->options["nothingMessage"] = Theme::container("Nothing found", "nothingMessage")->get();
+		
 		$this->on("error", function ($data, $msg) use ($options) {
 			$m = new Message();
 			if ($options["noMessages"])
@@ -1989,12 +2007,12 @@ class Control_Structure extends Hookable {
 			}
 			
 			if (isset($options["showCreated"]))
-				$m->add("form", Message::Action("Object_Put_Above", ["id" => $options["showCreated"][1], "msg" => $options["showCreated"][0]->sub($this->inserted)]));
+				$m->add("form", Message::Action("Object_Put_Above", ["id" => $options["showCreated"][1], "msg" => $options["showCreated"][0]->buildSub(self::$inserted)]));
 			
 			$e = Theme::container("", "Form.success");
 			$e->insert("Success");
 			Theme::tell($e, 1, "Form.success");
-			$m->add("form", Message::Success($e->get()));
+			//$m->add("form", Message::Success($e->get()));
 			return $m;
 		});
 	
@@ -2127,6 +2145,8 @@ class Control_Structure extends Hookable {
 				$lc->invoke();
 				return true;
 			}
+		}else{
+			$lc->invoke();
 		}
 		
 		
@@ -2144,7 +2164,10 @@ class Control_Structure extends Hookable {
 			}
 		}else{
 			foreach ($controls as $n => $c) {
-				$c->event($eventName, [$values[$n], $this], false);
+				$val = false;
+				if (isset($values[$n]))
+					$val = $values[$n];
+				$c->event($eventName, [$val, $this], false);
 			}
 		}
 	}
@@ -2180,7 +2203,7 @@ class Control_Structure extends Hookable {
 			$this->event("insert", [$index]);
 			$this->callControls("create", $noAction);
 			
-			$this->inserted = $b->arrayify();
+			self::$inserted = Data_Select($this->table, Quick_Find([["id", "=", $index]]))[0];
 		}
 		
 		return $rtn;
@@ -2233,7 +2256,7 @@ class Control_Structure extends Hookable {
 		return $rtn;
 	}
 	
-	private function findSorted($data) {
+	private function findSorted($data, $base = 0) {
 		$finder = new Data_Finder();
 		
 		$this->event("sortFinder", [&$finder], true);
@@ -2251,7 +2274,7 @@ class Control_Structure extends Hookable {
 				$c['c']->filter($val, $finder, $c['n']);
 		}
 		
-		$finder->limit($this->options["limit"]+1);
+		$finder->limit($this->options["limit"]+1, $base);
 		
 		$found = Data_Select($this->table, $finder);
 		
@@ -2268,17 +2291,21 @@ class Control_Structure extends Hookable {
 		}else{		
 			if (isset($this->options["edits"])) {
 				foreach ($found as $row) {
-					$html .= '<div class="Control_Structure_View_Edit" data-edit-instance="'.$this->index.'" data-edit-index="'.$row["id"].'">'.$this->options["view"]->sub($row).'</div>';
+					$html .= '<div class="Control_Structure_View_Edit" data-edit-instance="'.$this->index.'" data-edit-index="'.$row["id"].'">'.$this->options["view"]->buildSub($row).'</div>';
 				}
 			}else{
 				foreach ($found as $row) {
-					$html .= $this->options["view"]->sub($row);
+					$html .= $this->options["view"]->buildSub($row);
 				}
 			}
 		}
 		
 		if ($overflow) {
-			$html.="Show more";
+			$btn = Theme::button("Show more", "ShowMore");
+			$btn->addClass("ShowMore");
+			$btn->attr("style", "width: 100%");
+			$btn->attr("data-base", $base+$this->options["limit"]);
+			$html .= $btn->get();
 		}
 		
 		return $html;
@@ -2452,6 +2479,17 @@ class Control_Structure extends Hookable {
 			
 			$m->add("form", Message::Action("Object_Sort_Listener", ["html" => $html]));
 			return $m;
+		});
+		
+		$f->on("pass", function ($pass, $data) {
+			if (!isset($pass["feedme"]))
+				return false;
+			
+			$m = $this->event("success", [$data], false);
+			
+			$html = $this->findSorted($data, intval($pass["feedme"]));
+			
+			return ["food" => $html];
 		});
 		
 		$f->on("error", function ($data) {

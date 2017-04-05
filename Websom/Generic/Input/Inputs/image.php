@@ -110,4 +110,162 @@ function Input_image_Html_Get($options, $args, $value = ''){
 function Input_image_Override_Value($name, $options) {
 	return $_FILES[$name];
 }
+
+
+
+/**
+* \ingroup BuiltInInputs
+* 
+* The `Image` input is a nice easy to use validated image uploader.
+* 
+* The value of the image is in a base64 string use `$image = imagecreatefromstring(base64_decode($imageString))` to create a image from it.
+* 
+* \note this will add 2 bytes to the max file size to account for base64 =, == ending.
+* 
+* Options:
+*	- Image->max_width: The max width in pixels
+*	- Image->max_height: The max height in pixels
+*	- Image->min_width: The min width in pixels
+*	- Image->min_height: The min height in pixels
+*	- Image->max_size: The max size in bytes
+*
+*/
+class Image extends Input {
+	public $globalName = 'Image';
+	public $label = "input_image";
+	
+	public $max_width = 4000;
+	public $min_width = 10;
+	public $max_height = 3000;
+	public $min_height = 10;
+	
+	/**
+	* Warning this is not checked on the server
+	*/
+	public $acceptedExtensions = [".jpg", ".jpeg", ".png", ".gif"];
+	
+	/**
+	* Default is 1mb
+	*/
+	public $max_size = 1000000;
+	
+	function buildElement() {
+		$e = Theme::input_file($this->label, ["types" => $this->acceptedExtensions]);
+		
+		$e->attr("id", $this->id);
+		$e->attr("data-max-width", $this->max_width);
+		$e->attr("data-min-width", $this->min_width);
+		$e->attr("data-min-height", $this->min_height);
+		$e->attr("data-max-height", $this->max_height);
+		$e->attr("data-max-size", $this->max_size);
+		$e->attr("isinput", "");
+		
+		$this->doVisible($e);
+		
+		return $e;
+	}
+	
+	function get() {
+		return $this->buildElement()->get();
+	}
+	
+	function send() {
+		return 'var files = window.Websom.Theme.get($(element));
+		var newFiles = [];
+		for (var i = 0; i < files.length; i++) {
+			newFiles.push(files[i][0].split(",")[1]);
+		}
+		return newFiles;';
+	}
+	
+	function validate_client() {
+		return 'var files = window.Websom.Theme.get($(element));
+		
+		for (var i in files) {
+			var ind = parseInt(i+1);
+			var img = files[i][0];
+			var size = 4*Math.ceil(img.length/3);
+			var maxSize = parseInt($(element).attr("data-max-size"));
+			if (size > maxSize) {
+				return "Image "+ind+" is too large in size("+Math.round(size/1024)+"kb). The maximum size is "+Math.round(maxSize/1024)+"kb.";
+			}
+			
+			var image = files[i][1];
+			
+			var w = image.width;
+			var maxWidth = parseInt($(element).attr("data-max-width"));
+			var minWidth = parseInt($(element).attr("data-min-width"));
+			if (w > maxWidth) {
+				return "Too large, image "+ind+" must be under "+maxWidth+"pixels in width.";
+			}
+			if (w < minWidth) {
+				return "Too small, image "+ind+" must be over "+minWidth+"pixels in width.";
+			}
+			var h = image.height;
+			var maxHeight = parseInt($(element).attr("data-max-height"));
+			var minHeight= parseInt($(element).attr("data-min-height"));
+			if (h > maxHeight) {
+				return "Too large, image "+ind+" must be under "+maxHeight+"pixels in height.";
+			}
+			if (h < minHeight) {
+				return "Too small, image "+ind+" must be over "+minHeight+"pixels in height.";
+			}
+		}
+		
+		return true;';
+	}
+	
+	function validate_server($data) {
+		foreach ($data as $i => $img) {
+			$ind = $i+1;
+			$size = 4*ceil((strlen($img)/3));
+			
+			if ($size > $this->max_size) {
+				return "Image ".$ind." is too large in size(".($size/1024)."kb). The maximum size is ".($this->max_size/1024)."kb.";
+			}
+			
+			$base64 = base64_decode($img);
+			if ($base64 === false) {
+				return "Image ".$ind." is not formated correctly.";
+			}
+			$image = imagecreatefromstring($base64);
+			
+			if ($image === false)
+				return "Image ".$ind." is not formated correctly.";
+			
+			$w = imagesx($image);
+			
+			if ($w > $this->max_width) {
+				return "Too large, image ".$ind." must be under ".$this->max_width."pixels in width.";
+			}
+			if ($w < $this->min_width) {
+				return "Too small, image ".$ind." must be over ".$this->min_width."pixels in width.";
+			}
+			$h = imagesy($image);
+			
+			if ($h > $this->max_height) {
+				return "Too large, image ".$ind." must be under ".$this->max_height."pixels in height.";
+			}
+			if ($h < $this->min_height) {
+				return "Too small, image ".$ind." must be over ".$this->min_height."pixels in height.";
+			}
+			imagedestroy($image);
+		}
+		return true;
+	}
+	
+	function error() {
+		return "return $('<div>'+error+'</div>').insertAfter(element);";
+	}
+	
+	function receive($data) {
+		return $data;
+	}
+	
+	function load() {
+		return 'window.Websom.Theme.set($(element), data);';
+	}
+	
+}
+
 ?>

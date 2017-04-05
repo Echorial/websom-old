@@ -299,19 +299,34 @@ class InputController {
 			}
 		}
 		
-		return [$data, $errors];
+		$passed = false;
+		
+		if (isset($_POST["inputPost_Pass"])) {
+			$passed = $_POST["inputPost_Pass"];
+		}
+		
+		return [$data, $errors, $passed];
 	}
 	
 	static function get_post ($form, LateCall $sendMessages = null) {
 		$de = self::get_post_and_message($form);
 		
-		if ($de === false) return false;
+		if ($de === false)
+			return false;
+		
+		if (count($de[1]) > 0) {
+			LateCall::inject($sendMessages, function () use ($de, $form) {
+				self::send_error_messages($form, $de[0], $de[1]);
+			});
+			return false;
+		}
 		
 		LateCall::inject($sendMessages, function () use ($de, $form) {
-			if (count($de[1]) != 0) {
-				self::send_error_messages($form, $de[0], $de[1]);
-				return false;
+			if ($de[2] !== false) {
+				Cancel(json_encode($form->event("pass", [$de[2], $de[0]], false)));
+				return $de[0];
 			}
+				
 			self::send_success_messages($form, $de[0]);
 		});
 		
@@ -386,7 +401,7 @@ onEvent('endAfter', function () {
 				}');
 				continue;
 			}
-			array_push($set, $name.': function (element, name, error) {
+			array_push($set, $name.': function (element, name, error, later) {
 				'.$event.'
 			}');
 		}
@@ -532,6 +547,13 @@ class Input {
 	*/
 	public function load() {
 		return 'alert("Cannot load into input.");';
+	}
+	
+	/**
+	* This is called on the server when loading into a form input.
+	*/
+	public function into($val) {
+		return $val;
 	}
 }
 
@@ -725,6 +747,9 @@ class Input_List extends Input {
 	public $listStructure = false;
 	public $structure = false;
 	
+	public $max_items = 9999;
+	public $min_items = 0;
+	
 	public $globalName = "List";
 	
 	function __construct() {
@@ -740,7 +765,6 @@ class Input_List extends Input {
 	
 	function send() {
 		return '
-		
 		var data = [];
 		var listItems = $.data(element, "listids");
 		for (var l in listItems) {
@@ -768,6 +792,12 @@ class Input_List extends Input {
 		return '
 		var hasError = true;
 		var listItems = $.data(element, "listids");
+		var lil = Object.keys(listItems).length;
+		if (lil > parseInt($(element).attr("data-max-items")))
+			return "Too many items. Maximum amount is "+parseInt($(element).attr("data-max-items"));
+		if (lil < parseInt($(element).attr("data-min-items")))
+			return "Too few items. Minimum amount is "+parseInt($(element).attr("data-min-items"));
+		
 		for (var l in listItems) {
 			if (listItems[l] === false) continue;
 			for (var i = 0; i < listItems[l].items.length; i++) {
@@ -810,6 +840,12 @@ class Input_List extends Input {
 	function receive($data) {
 		$rtn = [];
 		if ($data === "0") $data = []; //Client sends 0 if the array is empty.
+		
+		if (count($data) > $this->max_items)
+			return "Too many items. The maximum amount is ".$this->max_items;		
+		if (count($data) > $this->max_items)
+			return "Too few items. The minimum amount is ".$this->min_items;
+		
 		foreach ($data as $item) {
 			$cItem = [];
 			$sIndex = 0;
@@ -933,7 +969,7 @@ class Input_List extends Input {
 			$inputs[$input['n']] = '<listinfo listn="'.$input['n'].'" globalname="'.$input['i']->globalName.'">'.$d['html'].'</listinfo>';
 		}
 		
-		$rtn = '<inputlist isinput id="'.$this->id.'"><listtemplate style="display: none;">';
+		$rtn = '<inputlist isinput id="'.$this->id.'" data-max-items="'.$this->max_items.'" data-min-items="'.$this->min_items.'"><listtemplate style="display: none;">';
 		if ($this->listStructure === false) {
 			$rtn .= (new Structure(Structure::lister($inputs)))->get($inputs);
 		}else{
@@ -976,14 +1012,19 @@ class Input_List extends Input {
 */
 class Structure {
 	public $html = '';
+	public $callback = false;
 	
 	/**
 	* This will create a new Structure object containing the $html string.
 	*
-	* \param string $html The html string to structure.
+	* \param string/function $html The html string to structure. Or pass a function in and when the structure is used the function will be called with the array of params.
 	*/
 	function __construct($html) {
-		$this->html = $html;
+		if (is_callable($html)) {
+			$this->callback = $html;
+		}else{
+			$this->html = $html;
+		}
 	}
 	
 	/**
@@ -1011,13 +1052,17 @@ class Structure {
 	* \param string $data The associative array to use.
 	*/
 	function get($data) {
-		$rtn = $this->html;
-		
-		foreach ($data as $key => $value) {
-			$rtn = str_replace('%'.$key.'%', $value, $rtn);
+		if ($this->callback === false) {
+			$rtn = $this->html;
+			
+			foreach ($data as $key => $value) {
+				$rtn = str_replace('%'.$key.'%', $value, $rtn);
+			}
+			
+			return $rtn;
+		}else{
+			return call_user_func($this->callback, $data);
 		}
-		
-		return $rtn;
 	}
 }
 
@@ -1254,7 +1299,11 @@ class Form extends Hookable {
 	* Loads a key/value array into the form
 	*/
 	function load($data) {
-		$this->loadData = $data;
+		$set = [];
+		foreach ($data as $k => $v) {
+			$set[$k] = $this->getInput($k)->into($v);
+		}
+		$this->loadData = $set;
 	}
 	
 	/**

@@ -40,6 +40,32 @@ class Exporter {
 	function prepare() {
 		return copydir(Document_root, $this->el);
 	}
+	
+	static public function compileJavascript($javascript) {
+		$post_d = 
+			'compilation_level='.'SIMPLE_OPTIMIZATIONS&'.
+			'output_format='.'text&'.
+			'output_info='.'compiled_code&'.
+			'js_code='.urlencode($javascript);
+
+		$ch = curl_init('http://closure-compiler.appspot.com/compile');
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 60);
+		//curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)");
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $post_d);
+		//curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		//curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($ch, CURLOPT_HEADER, false);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+		$r = curl_exec($ch);
+		if ($r === false) {
+			$r = $javascript;
+		}else{
+			return $r;
+		}
+		curl_close($ch);
+	}
 }
 
 
@@ -75,7 +101,8 @@ class Module_Exporter {
 	}
 	
 	function prepare() {
-		return mkdir($this->el, 0777, true);
+		if (!file_exists($this->el))
+			return mkdir($this->el, 0777, true);
 	}
 	
 	function export() {
@@ -88,10 +115,10 @@ class Module_Exporter {
 					fclose($check);
 					return Error('Export', 'Unable to open module file at "'.$loc[0].'".');
 				}
-				if (strpos(fread($check, filesize($loc[0])), ['&*Section*&', '&*SectionOptional*&', '&*SecSplit*&']) !== false) {
-					fclose($check);
-					return Error('Export', 'File '.$loc[0].' contains an invalid string &*Section*& or &*SectionOptional*& or &*SecSplit*&.');
-				}
+				//if (strpos(fread($check, filesize($loc[0])), ['&*Section*&', '&*SectionOptional*&', '&*SecSplit*&']) !== false) {
+				//	fclose($check);
+				//	return Error('Export', 'File '.$loc[0].' contains an invalid string &*Section*& or &*SectionOptional*& or &*SecSplit*&.');
+				//}
 				fclose($check);
 			}
 		}
@@ -300,10 +327,12 @@ function CmdExportModule () {
 		$exp = new Module_Exporter(Document_root.'/ExportedModules', $params['moduleName']);
 		$exp->addFile(Websom_root.'/Website/Modules/'.$params['moduleName'].'.php', 'Module');
 		
+		if (isset($flags['JavascriptFiles']))
 		foreach ($flags['JavascriptFiles'] as $js) {
 			$exp->addFile(trim($js['filePath'], '/'), 'Javascript', ($js['optional'] == 'true') ? true : false, $js['description'], ($js['minify'] == 'true') ? true : false);
 		}
 		
+		if (isset($flags['CssFiles']))
 		foreach ($flags['CssFiles'] as $css) {
 			$exp->addFile(trim($css['filePath'], '/'), 'Css', ($css['optional'] == 'true') ? true : false, $css['description']);
 		}

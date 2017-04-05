@@ -24,7 +24,7 @@ class View {
 	/**
 	* @param Injections $customInjections If you wish to override the injections for this single view instance.
 	*/
-	public final function __construct(Injections $customInjections = null) {
+	public function __construct(Injections $customInjections = null) {
 		if ($customInjections === null) {
 			$this->inject = new Injections();
 		}else{
@@ -70,6 +70,9 @@ class View {
 	* @return A string containg the built sub.
 	*/
 	public function buildSub($row) {
+		if (!($this->inject instanceof Injections)) {
+			$this->inject = new Injections();
+		}
 		$this->inject->row = $row;
 		return $this->sub($row, $this->inject);
 	}
