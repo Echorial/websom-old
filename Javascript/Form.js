@@ -247,7 +247,6 @@ function decodeQ(object) {
 	}
 	return object;
 }
-//Insert actions here NOTE: this will change into a more organized file in the future without disrupting the code\\
 
 function Action_Append (_form, data) {
 	if (typeof data['html'] == 'undefined') return false;

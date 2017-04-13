@@ -26,11 +26,12 @@ window.Websom.Input.buildForms = function (lookin = $("body")) {
 };
 
 onEvent("themeReady", function () {
-	$(document).on('submit', 'websform', function () {
+	$(document).on('submit', 'websform', function (e) {
 		Websform.post($(this));
+		e.stopPropagation();
 	});
 	
-	$(document).on('click', 'websform input[type=submit]:not([disabled])', function () {
+	$(document).on('click', 'websform input[type=submit]:not([disabled])', function (e) {
 		$(this).closest("websform").trigger('submit');
 	});
 	
@@ -41,7 +42,6 @@ onEvent("themeReady", function () {
 
 
 Websform = {
-	
 	currentDynamicEvents: false,
 	currentForm: false,
 	
@@ -112,7 +112,13 @@ Websform = {
 				data: formData
 			});
 		
-		if (formData !== false)
+		if (formData !== false) {
+			for (var i in formData) {
+				if (typeof formData[i] == "object")
+					if (Array.isArray(formData[i]))
+						if (formData[i].length == 0)
+							formData[i] = {__websom_array: true}; //Empty arrays do not post
+			}
 			$.ajax({
 				type: "POST",
 				url: window.location.href,
@@ -130,6 +136,7 @@ Websform = {
 					Websform.currentForm = false;
 				}
 			});
+		}
 	},
 	
 	

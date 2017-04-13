@@ -155,14 +155,9 @@ class InputController {
 	static public $staticJavascripts = [];
 	static public $clientFormInfo = [];
 	
-	
-	static public function stringify(Form $form) {
-		$rtn = '';
-		
+	static public function stringifyInputs(Form $form) {
 		$inputs = [];
 		$inp = [];
-		
-		InputController::$clientFormInfo[$form->name]["dynamicFormEvents"] = $form->clientEvents;
 		
 		foreach ($form->inputs as $input) {
 			$input['i']->id = $form->name.'__'.$input['n'];
@@ -177,6 +172,12 @@ class InputController {
 			
 		}
 		
+		return [$inputs, $inp];
+	}
+	
+	static public function stringifyFormStart(Form $form) {
+		InputController::$clientFormInfo[$form->name]["dynamicFormEvents"] = $form->clientEvents;
+		
 		$starter = "submit-on-start";
 		if (!$form->submitOnStart)
 			$starter = '';
@@ -185,13 +186,20 @@ class InputController {
 		if ($form->loadData !== false) {
 			$formStart .= '<websformloader>'.json_encode($form->loadData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK | JSON_HEX_TAG).'</websformloader>';
 		}
+		return $formStart;
+	}
+	
+	static public function stringify(Form $form) {
+		$rtn = '';
 		
-		$formEnd = '</websform>';
+		$gotten = self::stringifyInputs($form);
+		$inputs = $gotten[0];
+		$inp = $gotten[1];
 		
 		if (gettype($form->structure) === 'string') throw new Exception("Form structure must be false or an instance of Structure. Found string.");
 		if (get_class($form->structure) !== 'Structure') throw new Exception("Form structure must be false or an instance of Structure");
 		
-		return $formStart.$form->structure->get($inp).$formEnd;
+		return self::stringifyFormStart($form).$form->structure->get($inp)."</websform>";
 	}
 	
 	static public function buildify($input) {
@@ -289,8 +297,13 @@ class InputController {
 		foreach ($form->inputs as $input) {
 			//Check if input sent from the client exists.
 			if (isset($_POST['inputPost'][$form->name.'__'.$input['n']])) {
+				//Check for empty arrays
+				$cData = $_POST['inputPost'][$form->name.'__'.$input['n']];
+				if (gettype($cData) == "array")
+					if (isset($cData["__websom_array"]))
+						$cData = [];
 				//Deserialize the input from the client and store it.
-				$data[$input['n']] = $input['i']->receive($_POST['inputPost'][$form->name.'__'.$input['n']]);
+				$data[$input['n']] = $input['i']->receive($cData);
 				//Validate the input on the server.
 				$error = $input['i']->validate_server($data[$input['n']]);
 				if ($error !== true) {
@@ -1205,7 +1218,6 @@ class Form extends Hookable {
 	static public $InputCount = 0;
 	
 	/**
-	* 
 	* You should override this with a Structure object if you wish to customize the layout of the form html.
 	*/
 	public $structure = false;
@@ -1358,11 +1370,19 @@ class Form extends Hookable {
 		return false;
 	}
 	
-	/**
-	* This will return a html string for displaying the form on a webpage.
-	*/
-	function get() {
-		if (!$this->structure) {
+	function getInputs() {
+		$inp = InputController::stringifyInputs($this)[1];
+		$this->doStructure();
+		return $this->structure->get($inp);
+	}
+	
+	function wrap($cont) {
+		return InputController::stringifyFormStart($this).$cont."</websform>";
+	}
+	
+	///\cond
+	function doStructure() {
+			if (!$this->structure) {
 			$s = '';
 			foreach($this->inputs as $i) {
 				$s .= '%'.$i['n'].'%';
@@ -1370,7 +1390,14 @@ class Form extends Hookable {
 			}
 			$this->structure = new Structure($s);
 		}
-		
+	}
+	///\endcond
+	
+	/**
+	* This will return a html string for displaying the form on a webpage.
+	*/
+	function get() {
+		$this->doStructure();
 		return InputController::stringify($this);
 	}
 	

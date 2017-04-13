@@ -1946,6 +1946,8 @@ class Control_Structure extends Hookable {
 	* 	- string "deleteText": The delete button text.
 	* 	- string "nothingMessage": The message to display when no rows are found.
 	* 	- integer "limit"(default 25): The max number of rows per page or load.
+	* 	- string "wrapWith"(default): Override this to set the .Object_Sort_View container. Note the element must have the class Object_Sort_View.
+	* 	- string "wrapForm"(default false): If true this will wrap the form arround the entire contents.
 	* 
 	* Events:
 	* 	- "sortData"($data): This is called before the viewer creates a finder to find the data. Return the modified $data object.
@@ -2527,24 +2529,105 @@ class Control_Structure extends Hookable {
 		
 		
 		
-		$html = $areaStructure->get([
-			"sort" => $f->get(),
-			"view" => "<div class='Object_Sort_View'></div>"
-		]);
-		
-		return "<div class='Object_Sort_Wrap'>".$html."</div>";
+		if (isset($this->options["wrapForm"])) {
+			$html = $areaStructure->get([
+				"sort" => $f->getInputs(),
+				"view" => (isset($this->options["wrapWith"])) ? $this->options["wrapWith"] : "<div class='Object_Sort_View'></div>"
+			]);
+			
+			return "<div class='Object_Sort_Wrap'>".$f->wrap($html)."</div>";
+		}else {
+			$html = $areaStructure->get([
+				"sort" => $f->get(),
+				"view" => (isset($this->options["wrapWith"])) ? $this->options["wrapWith"] : "<div class='Object_Sort_View'></div>"
+			]);
+			
+			return "<div class='Object_Sort_Wrap'>".$html."</div>";
+		}
 	}
 	///\endcond
 }
 
-
-
-
-
-
-
-
-
+/**
+* \ingroup BuiltInInputs
+* 
+* The `SortSelector` input is an input that contains a sorted Control_Structure, each item can be selected by simply including a check box with the class SortSelector and an attribute data-sort-selector-value in the sortStructure.
+* 
+* Value: An array of values from the data-sort-selector-value attributes attached to the checkboxes.
+* 
+* \note Loading is not yet implemented.
+* 
+* Options:
+* 	- SortSelector->max_selects: The max number of selections allowed.
+* 	- SortSelector->validate($value): Override with function that returns true if value is valid or string with error msg if not.
+* 
+* Example comming soon.
+*/
+class SortSelector extends Input {
+	public $globalName = "SortSelector";
+	public $label = "SortSelector";
+	public $cs;
+	
+	public $max_selects = 10;
+	public $validate;
+	
+	function __construct(Control_Structure $cs) {
+		$this->cs = $cs;
+	}
+	
+	function buildElement() {
+		$e = new Element("div", ["class" => "SortSelector-Container"]);
+		
+		$e->append($this->cs->get());
+		
+		$e->attr("id", $this->id);
+		$e->attr("isinput", "");
+		
+		$this->doVisible($e);
+		
+		return $e;
+	}
+	
+	function get() {
+		return $this->buildElement()->get();
+	}
+	
+	function send() {
+		return 'var rtn = [];
+		$(element).find(".SortSelector").each(function () {
+			if (Websom.Theme.get($(this)))
+				rtn.push($(this).attr("data-sort-selector-value"))
+		});
+		return rtn;';
+	}
+	
+	function validate_client() {
+		return 'return true;';
+	}
+	
+	function validate_server($data) {
+		foreach ($data as $i) {
+			if (is_callable($this->validate)) {
+				$value = $this->validate($i);
+				if ($value !== true)
+					return $value;
+			}
+		}
+		return true;
+	}
+	
+	function error() {
+		return "return $('<div>'+error+'</div>').insertAfter(element);";
+	}
+	
+	function receive($data) {
+		return $data;
+	}
+	
+	function load() {
+		return '';
+	}
+}
 
 
 ?>
