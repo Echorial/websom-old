@@ -318,7 +318,7 @@ function Reload_Modules() {
 				return '|Error| Module '.$ModuleName.' is not cooperating. \n';
 			}
 			if ($tbls === false) {
-				$msgs .= '--- Loaded '.$ModuleName.' \n';
+				$msgs .= ' --- Loaded '.$ModuleName.' \n';
 				continue;
 			}
 			foreach ($tbls as $tableName => $tableColumns){

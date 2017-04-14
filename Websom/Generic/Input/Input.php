@@ -880,13 +880,10 @@ class Input_List extends Input {
 	}
 	
 	function load() {
-		return '
-
+		return 'if (typeof data == "string") data = JSON.parse(data);
 		for (var i = 0; i < data.length; i++) {
 			$(element).trigger("addtolist", [data[i]]);
-		}
-		
-		';
+		}';
 	}
 	
 	function init() {
@@ -903,7 +900,7 @@ class Input_List extends Input {
 		});
 		
 		$.data(element, "listtemplate", $(element).children("listtemplate").html());
-		$.data(element, "listarea", $(element).children("listarea"));
+		$.data(element, "listarea", $(element).find("listarea[data-list-parent="+$(element).attr("id")+"]"));
 		$.data(element, "listids", {});
 		var elem = $(element);
 		elem.children("listtemplate").remove();
@@ -923,14 +920,11 @@ class Input_List extends Input {
 			var subItems = [];
 			listarea.find("#"+newId+" [isinput]").each(function () {
 				var input = $(this);
-			
-					
 				
 				if (input.closest("listarea")[0] !== listarea[0]) return true;
 				var sId = newId+"_subitm"+subItems.length;
 				input.attr("id", sId);
 				if (input.hasAttr("list-get-new-id")) {
-					
 					var fors = $("*[for="+input.attr("list-get-new-id")+"]");
 					var idInp = $("#"+input.attr("list-get-new-id"));
 					idInp.uniqueId();
@@ -946,11 +940,10 @@ class Input_List extends Input {
 				}
 				
 				subItems.push(sId);
-				
 			});
 			
 			$.data(node, "listids")[newId] = {items: subItems};
-			CallEventHook("themeReload", [listarea]);
+			CallEventHook("themeReload", listarea);
 		});
 		
 		
@@ -982,7 +975,7 @@ class Input_List extends Input {
 			$inputs[$input['n']] = '<listinfo listn="'.$input['n'].'" globalname="'.$input['i']->globalName.'">'.$d['html'].'</listinfo>';
 		}
 		
-		$rtn = '<inputlist isinput id="'.$this->id.'" data-max-items="'.$this->max_items.'" data-min-items="'.$this->min_items.'"><listtemplate style="display: none;">';
+		$rtn = '<inputlist isinput id="'.$this->id.'" data-max-items="'.$this->max_items.'" data-min-items="'.$this->min_items.'"><listtemplate class="do-not-theme" style="display: none;">';
 		if ($this->listStructure === false) {
 			$rtn .= (new Structure(Structure::lister($inputs)))->get($inputs);
 		}else{
@@ -991,9 +984,11 @@ class Input_List extends Input {
 		
 		$rtn .= '</listtemplate>';
 		
+		$addTo = Theme::button("Add", "list");
+		$addTo->attr("listadd", "");
 		$struct = [
-			'list' => '<listarea></listarea>',
-			'add' => '<button listadd>Add</button>'
+			'list' => '<listarea data-list-parent="'.$this->id.'"></listarea>',
+			'add' => $addTo->get()
 		];
 		
 		if ($this->structure === false) {
