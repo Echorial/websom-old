@@ -287,6 +287,7 @@ class Text extends Input {
 	
 	function receive($data) {
 		if ($this->displayType == "number")
+			return floatval($data);
 		return $data;
 	}
 	
