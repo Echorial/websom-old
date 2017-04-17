@@ -1935,6 +1935,7 @@ class Control_Structure extends Hookable {
 	* 			- integer "id": Id of the row to edit.
 	* 		Events:
 	* 			- "edit"($data, $oldData): When the client edits a row. Params: data(the new data), Return false to cancel the edit.
+	* 			- "builder"($builder, $data, $oldData): Modify the builder before the edit event is called.
 	* 	- s: This will create a sortable html element with the column/control pairs soring the view.
 	* Options:
 	* 	- Structure "areaStructure": A Structure object that goes around the control area and view area. Variables %sort%, %view%
@@ -2249,6 +2250,8 @@ class Control_Structure extends Hookable {
 				}
 		}
 		$arrify = $b->arrayify();
+		$this->event("builder", [$b, $arrify, $found[0]]);
+		
 		if ($rtn === true AND $this->event("edit", [$arrify, $found[0]]) == false) {
 			if (count($arrify) > 0)
 				Data_Update($this->table, $b, $f);
