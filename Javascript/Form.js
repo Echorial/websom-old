@@ -6,6 +6,9 @@ $(document).ready(function() {
 			var serverResponseCallback = function () {};
 			responsives[rep](
 				function (msg, inlineCback = false){
+					if (typeof msg != "object")
+						throw new Error("Unable to serialize responive response.");
+					
 					msg['responiveid'] = id;
 					$.ajax({
 						type: "POST",
