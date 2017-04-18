@@ -6,6 +6,9 @@ $(document).ready(function() {
 			var serverResponseCallback = function () {};
 			responsives[rep](
 				function (msg, inlineCback = false){
+					if (typeof msg != "object")
+						throw new Error("Unable to serialize responsive response.");
+					
 					msg['responiveid'] = id;
 					$.ajax({
 						type: "POST",
@@ -247,7 +250,6 @@ function decodeQ(object) {
 	}
 	return object;
 }
-//Insert actions here NOTE: this will change into a more organized file in the future without disrupting the code\\
 
 function Action_Append (_form, data) {
 	if (typeof data['html'] == 'undefined') return false;

@@ -7,7 +7,6 @@ if ($docChars[count($docChars)-1] == '/'){
 }
 
 
-
 /**
 * \defgroup Globals Globals
 * These globals can be used all throughout websom
@@ -16,21 +15,26 @@ if ($docChars[count($docChars)-1] == '/'){
 * 	- Websom_root: The root working folder of websom.
 * 	- Document_root: The root public folder.
 * 	- Local_root: The root directory using ./. This is set by the page.
+* 	- Client_root: The path that the client will use to get javascript and css.
 * 	- Document_root_local: /
 * 	- Host: The complete website url.
 * 	- Website_name: The name of the website.
 * 	- Modules_root: The modules directory.
-*
+*	- Current_Page: The current page name. It is $_SERVER['REQUEST_URI']
+*	- Current_Url: The host+current page name.
 */
-
-
-if (!defined("Local_root"))
-	define("Local_root", "");
 
 define("Websom_root", $docRoot.'/Websom');
 define("Document_root", $docRoot);
 define("Document_root_local", '/');
-define("Host", 'http://www.'.$_SERVER['HTTP_HOST']);
+define("Current_Page", $_SERVER['REQUEST_URI']);
+
+if (!file_exists(Document_root.'/Config/')) {
+	mkdir(Document_root.'/Config/');
+}
+
+$hostGot = $_SERVER['HTTP_HOST'];
+define("Host", 'http://'.$hostGot);
 
 define("Modules_root", Websom_root.'/Website/Modules');
 
@@ -80,6 +84,9 @@ Website_major = 0
 
 ;Str helper
 Use_MultiByte_String = \"no\"
+
+;Base
+Should_Add_Base_Tag = \"no\"
 
 ;End");
 
@@ -136,10 +143,18 @@ class Websom {
 
 Websom::$Modules = [];
 Websom::$Config = Websom_Reload_Config();
+
+if (!defined("Local_root"))
+	define("Local_root", "");
+
+if (!defined("Client_root"))
+	define("Client_root", Host."/");
+
+define("Current_Url", Host.Current_Page);
+
 Str::init();
 Websom::$Version = '1.5';
 Websom::$Live = (Websom::$Config['live'] == "yes" ? true : false);
-
 //Session start moved to the Session core.
 
 //For stopping the page echo\\
@@ -168,6 +183,19 @@ function IncludeResources() {
 function Render(){
 	global $DoNotRender;
 	return $DoNotRender;
+}
+
+/**
+* \ingroup PageFunctions
+* 
+* This should be used for all local relative links.
+* 
+* Use this to format a relative local like like: "/images/53.png" into "http://this.com/images/53.png"
+* 
+* \note Make sure the $relative has no / before it.
+*/
+function Format_Link($relative) {
+	return Host."/".$relative;
 }
 
 /**
@@ -311,8 +339,8 @@ include("Websom_Run_Modules.php");
 
 callEvent("resourcesLoad");
 
-Resources::Register_All(Local_root.'Css/');
-Resources::Register_All(Local_root.'Javascript/');
+Resources::Register_All(Local_root.'Css/', "Websom", true, Client_root."Css/");
+Resources::Register_All(Local_root.'Javascript/', "Websom", true, Client_root."Javascript/");
 
 Resources::setInfo(Local_root."Javascript/Jquery.js", ["index" => 9999]);
 Resources::setInfo(Local_root."Javascript/Tools.js", ["index" => 9998]);
