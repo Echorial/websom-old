@@ -7,7 +7,7 @@ $(document).ready(function() {
 			responsives[rep](
 				function (msg, inlineCback = false){
 					if (typeof msg != "object")
-						throw new Error("Unable to serialize responive response.");
+						throw new Error("Unable to serialize responsive response.");
 					
 					msg['responiveid'] = id;
 					$.ajax({
