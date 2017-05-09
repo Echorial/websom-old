@@ -267,6 +267,11 @@ class Theme {
 		return self::$theme->reveal($start, $show, self::mergeRules(self::getRule('reveal', $label), $options));
 	}
 	
+	static public function reveal_card($title, $actions, $image, $content, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->reveal_card($title, $actions, $image, $content, self::mergeRules(self::getRule('reveal_card', $label), $options));
+	}
+	
 }
 
 Theme::run();
@@ -373,6 +378,20 @@ interface iTheme {
 	* 	- caption(string): The caption for the image.
 	*/
 	public function image($url, $options);
+	
+	/**
+	* Reveal Card.
+	*
+	* Options:
+	* 	- class(string): The class to be attached to the card.
+	* 	- size(int): The size from 1-3
+	* 	- title(string): The title.
+	* 	- actions(string): The action bar.
+	* 	- image(string): The image url for the card.
+	* 	- content(string): The reveal content.
+	* 	- revealTitle(string): The revealed title.
+	*/
+	public function reveal_card($title, $actions, $image, $content, $options);
 	
 	/**
 	* Apply a tooltip to the `element`.

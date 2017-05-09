@@ -181,7 +181,7 @@ class InputController {
 		$starter = "submit-on-start";
 		if (!$form->submitOnStart)
 			$starter = '';
-		$formStart = '<websform '.$starter.' name="'.$form->name.'">';
+		$formStart = '<websform '.$starter.' data-client-name="'.($form->clientName !== false ? $form->clientName : "0").'" name="'.$form->name.'">';
 		
 		if ($form->loadData !== false) {
 			$formStart .= '<websformloader>'.json_encode($form->loadData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK | JSON_HEX_TAG).'</websformloader>';
@@ -620,7 +620,13 @@ class Input_Group extends Input {
 				var error = Websform.build.callInput({events: false, globalName: input.attr("groupgn")}, "validate")(input[0], input.attr("id"));
 				
 				if (error !== true) {
-					Websform.build.callInput({events: false, globalName: input.attr("groupgn")}, "error")(input[0], input.attr("id"), error);
+					var _error = Websform.build.callInput({events: false, globalName: input.attr("groupgn")}, "error")(input[0], input.attr("id"), error);
+					if ("inputError" in Websform.currentDynamicEvents)
+						Websform.currentDynamicEvents["inputError"]({
+							$error: _error,
+							$form: Websform.currentForm,
+							$element: input
+						});
 					hasError = false;
 				}
 			}
@@ -780,6 +786,7 @@ class Input_List extends Input {
 		return '
 		var data = [];
 		var listItems = $.data(element, "listids");
+		
 		for (var l in listItems) {
 			if (listItems[l] === false) continue;
 			var currentItem = {};
@@ -794,32 +801,29 @@ class Input_List extends Input {
 			}
 			data.push(currentItem);
 		}
-		
-		if (data.length == 0) data = 0; //Empty arrays are not posting. The server input code turns this into an empty array.
-		
-		return data;
-		';
+		return data;';
 	}
 	
 	function validate_client() {
 		return '
 		var hasError = true;
 		var listItems = $.data(element, "listids");
+		if (typeof listItems == "undefined")
+			listItems = {};
+		
 		var lil = Object.keys(listItems).length;
 		if (lil > parseInt($(element).attr("data-max-items")))
 			return "Too many items. Maximum amount is "+parseInt($(element).attr("data-max-items"));
 		if (lil < parseInt($(element).attr("data-min-items")))
 			return "Too few items. Minimum amount is "+parseInt($(element).attr("data-min-items"));
-		
 		for (var l in listItems) {
 			if (listItems[l] === false) continue;
 			for (var i = 0; i < listItems[l].items.length; i++) {
 				var input = $("#"+listItems[l].items[i]);
-				if(!isset(input.attr("listgn"))) continue;
-				var error = Websform.build.callInput({events: false, globalName: input.attr("listgn")}, "validate")(input[0], input.attr("id"));
+				if(typeof input.attr("listgn") == "undefined") continue;
 				
+				var error = Websform.build.callInput({events: false, globalName: input.attr("listgn")}, "validate")(input[0], input.attr("id"));
 				if (error !== true) {
-					
 					var _error = Websform.build.callInput({events: false, globalName: input.attr("listgn")}, "error")(input[0], input.attr("id"), error);
 					if ("inputError" in Websform.currentDynamicEvents)
 						Websform.currentDynamicEvents["inputError"]({
@@ -852,7 +856,7 @@ class Input_List extends Input {
 	
 	function receive($data) {
 		$rtn = [];
-		if ($data === "0") $data = []; //Client sends 0 if the array is empty.
+		//if ($data === "0") $data = []; //Client sends 0 if the array is empty.
 		
 		if (count($data) > $this->max_items)
 			return "Too many items. The maximum amount is ".$this->max_items;		
@@ -881,14 +885,15 @@ class Input_List extends Input {
 	
 	function load() {
 		return 'if (typeof data == "string") data = JSON.parse(data);
+		$.data(element, "listids", {});
+		$(element).children("listarea").empty();
 		for (var i = 0; i < data.length; i++) {
 			$(element).trigger("addtolist", [data[i]]);
 		}';
 	}
 	
 	function init() {
-		return '
-		
+		return 'var scopeThis = this;
 		$(element).children("listtemplate").find("listinfo *[isinput]").each(function () {
 			var that = $(this);
 			var info = that.closest("listinfo");
@@ -898,6 +903,9 @@ class Input_List extends Input {
 			
 			info.remove();
 		});
+		
+		if ($(element).find("listarea").attr("data-list-parent") == "_NULL_")
+			$(element).find("listarea").attr("data-list-parent", $(element).attr("id"));
 		
 		$.data(element, "listtemplate", $(element).children("listtemplate").html());
 		$.data(element, "listarea", $(element).find("listarea[data-list-parent="+$(element).attr("id")+"]"));
@@ -914,16 +922,19 @@ class Input_List extends Input {
 			var node = eleme[0];
 			
 			var listarea = $.data(node, "listarea");
-			var newId = eleme.attr("id")+"__itm__"+Object.keys($.data(node, "listids")).length;
+			var listIndex = Object.keys($.data(node, "listids")).length;
+			var newId = eleme.attr("id")+"__itm__"+listIndex;
 			listarea.append("<listitem id=\'"+newId+"\'>"+$.data(node, "listtemplate")+"</listitem>");
 			
 			var subItems = [];
-			listarea.find("#"+newId+" [isinput]").each(function () {
+			listarea.find("#"+newId+" [isinput]:not(#"+newId+" [isinput] [isinput])").each(function () {
 				var input = $(this);
-				
 				if (input.closest("listarea")[0] !== listarea[0]) return true;
 				var sId = newId+"_subitm"+subItems.length;
 				input.attr("id", sId);
+				input.addClass("input-list-item");
+				input.attr("data-input-list-index", subItems.length-1);
+				
 				if (input.hasAttr("list-get-new-id")) {
 					var fors = $("*[for="+input.attr("list-get-new-id")+"]");
 					var idInp = $("#"+input.attr("list-get-new-id"));
@@ -931,8 +942,7 @@ class Input_List extends Input {
 					fors.attr("for", idInp.attr("id"));
 				}
 				
-				
-				Websform.build.callInput({events: false, globalName: input.attr("listgn")}, "init")(input[0], input.attr("id"));
+				Websform.build.callInput({events: false, globalName: input.attr("listgn")}, "init").apply({serverName: input.attr("listn"), getScopeData: function () {return scopeThis.getScopeData()[scopeThis.serverName][listIndex]}}, [input[0], input.attr("id")]);
 				
 				if (isset(data))
 				if (input.attr("listn") in data) {
@@ -943,6 +953,7 @@ class Input_List extends Input {
 			});
 			
 			$.data(node, "listids")[newId] = {items: subItems};
+			
 			CallEventHook("themeReload", listarea);
 		});
 		
@@ -1126,6 +1137,20 @@ class Message {
 	}
 
 	/**
+	* This is a built in Message/Action that appends the $html to the $selector.
+	*
+	* \param string $html This is the html that is appended.
+	* \param string $selector The selector to append the $html to.
+	*/
+	static public function Append($html, $selector) {
+		return [
+			'__type' => 'Append',
+			'html' => $html,
+			'selector' => $selector
+		];
+	}
+
+	/**
 	* This is a built in Message/Action that takes the client to a location.
 	*
 	* \param string $location This is the location to send the client to.
@@ -1225,6 +1250,11 @@ class Form extends Hookable {
 	public $clientEvents = [];
 	
 	/**
+	* Set this name to be able to use Websom.Forms.WhatEverTheClientNameIs on the page in javascript.
+	*/
+	public $clientName = false;
+	
+	/**
 	* This will construct the Form object and set the name.
 	* 
 	* @param string $name The form name. Try to make this unique.
@@ -1252,7 +1282,7 @@ class Form extends Hookable {
 			}, 5000);
 		");
 				
-		$this->client("inputError", "$(event.\$error).fadeOut(100);$(event.\$error).addClass('input_error');$(event.\$error).fadeIn(100);");
+		$this->client("inputError", "$(event.\$error).fadeOut(100);$(event.\$error).addClass('input_error').css('color', 'red'); $(event.\$error).fadeIn(100);");
 		
 		$this->on("error", function ($data, $msg) {
 			$m = new Message();
@@ -1409,6 +1439,14 @@ class Action_Remove extends Action {
 	}
 }
 
+class Action_Append extends Action {
+	public $name = "Append";
+	
+	function javascript() {
+		return '$(data["html"]).appendTo($(data["selector"])).hide().slideDown("fast");';
+	}
+}
+
 class Action_Success extends Action {
 	public $name = "Success";
 	
@@ -1454,6 +1492,7 @@ onEvent("ready", function () {
 	Register_Action(new Action_Forward());
 	Register_Action(new Action_Error());
 	Register_Action(new Action_Remove());
+	Register_Action(new Action_Append());
 });
 
 

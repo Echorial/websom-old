@@ -9,6 +9,19 @@ $(document).ready(function() {
 					if (typeof msg != "object")
 						throw new Error("Unable to serialize responsive response.");
 					
+					function recur (base) {
+						for (var i in base) {
+							if (typeof base[i] == "object")
+								if (Array.isArray(base[i])) {
+									if (base[i].length == 0)
+										base[i] = {__websom_array: true}; //Empty arrays do not post
+								}else
+									recur(base[i]);
+						}
+					}
+					
+					recur(msg);
+					
 					msg['responiveid'] = id;
 					$.ajax({
 						type: "POST",

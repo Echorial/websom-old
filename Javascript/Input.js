@@ -1,4 +1,35 @@
+function WebsomForm(name, element, inputs) {
+	this.name = name;
+	this.element = element;
+	this._inputs = inputs;
+	this.inputs = [];
+	for (var i in this._inputs) {
+		if ("serverName" in this._inputs[i])
+			this.inputs[this._inputs[i].serverName] = new WebsomForm.Input(i, this._inputs[i]);
+	}
+}
+
+WebsomForm.prototype.load = function (data) {
+	for (var i in this._inputs) {
+			if (i == "dynamicFormEvents") continue;
+			
+			if (this._inputs[i].serverName in data) {
+				Websform.build.callInput(this._inputs[i], 'load')($('#'+i)[0], data[this._inputs[i].serverName]);
+			}
+		}
+}
+
+WebsomForm.Input = function (id, input) {
+	this.id = id;
+	this.data = input;
+}
+
+WebsomForm.Input.prototype.getElement = function () {
+	return $('#'+this.id)[0];
+}
+
 window.Websom.Input = {};
+window.Websom.Forms = {};
 window.Websom.Input.buildForms = function (lookin = $("body")) {
 	lookin.find("websform:not([data-loaded])").each(function () {
 		var f = $(this);
@@ -14,14 +45,21 @@ window.Websom.Input.buildForms = function (lookin = $("body")) {
 		
 		for (var i in inputs) {
 			if (i == "dynamicFormEvents") continue;
-			Websform.build.callInput(inputs[i], 'init')($('#'+i)[0], i);
+			Websform.build.callInput(inputs[i], 'init').apply({serverName: inputs[i].serverName, getScopeData: function () {return Websform.getInputData(f, true)}}, [$('#'+i)[0], i]);
 			if (inputs[i].serverName in loadData) {
 				Websform.build.callInput(inputs[i], 'load')($('#'+i)[0], loadData[inputs[i].serverName]);
 			}
 		}
 		
+		var websomForm = new WebsomForm(f.attr("name"), f[0], inputs);
+		
 		if (f.hasAttr("submit-on-start"))
 			f.trigger('submit');
+		
+		if (f.attr("data-client-name") != "0") {
+			websomForm.name = f.attr("data-client-name");
+			Websom.Forms[f.attr("data-client-name")] = websomForm;
+		}
 	});
 };
 
@@ -46,7 +84,9 @@ Websform = {
 	currentForm: false,
 	
 	build: {
-		whole: function (_form, devents) {
+		whole: function (_form, devents, serverNames, suppressErrors) {
+			serverNames = serverNames || false;
+			suppressErrors = suppressErrors || false;
 			var f = $(_form);
 			
 			var data = {};
@@ -55,12 +95,19 @@ Websform = {
 			for (var i in inputs) {
 				var inputElem = $('#'+i);
 				if (inputs[i]['type'] == 0) {
-					data[i] = Websform.build.input(inputElem, inputs[i], i, devents, _form);
+					var nameIt = i;
+					if (serverNames)
+						nameIt = inputs[i].serverName;
+					data[nameIt] = Websform.build.input(inputElem, inputs[i], i, devents, _form, suppressErrors);
 					if (typeof data[i] == "object")
 					if ("inputError" in data[i])
 						er = true;
 				}
 			}
+			
+			if (suppressErrors)
+				return data;
+			
 			return ((er) ? false : data);
 		},
 		
@@ -77,10 +124,12 @@ Websform = {
 			}
 		},
 		
-		input: function (_input, _data, _name, devents, _form) {
+		input: function (_input, _data, _name, devents, _form, suppressErrors) {
+			suppressErrors = suppressErrors || false;
+			
 			var that = this;
 			var error = that.callInput(_data, 'validate')(_input[0], _name);
-			if (error !== true) {
+			if (error !== true && !suppressErrors) {
 				var _error = that.callInput(_data, 'error')(_input[0], _name, error);
 				if ("inputError" in devents)
 					devents["inputError"]({
@@ -94,6 +143,17 @@ Websform = {
 			}
 		}
 	},
+	
+	getInputData: function (_form, suppress) {
+		suppress = suppress || false;
+		_form.find(".input_error").remove();
+		
+		var devents = window["InputForms"][$(_form).attr("name")]["dynamicFormEvents"];
+		Websform.currentDynamicEvents = devents;
+		Websform.currentForm = _form;
+		return Websform.build.whole(_form, devents, true, suppress);
+	},
+	
 	post: function (_form) {
 		var that = this;
 		var devents = window["InputForms"][$(_form).attr("name")]["dynamicFormEvents"];
@@ -124,7 +184,11 @@ Websform = {
 				url: window.location.href,
 				data: $.param({inputPost: formData, inputPost_Form: _form.attr("name")}),
 				success: function(data){
-					data = JSON.parse(data);
+					try {
+						data = JSON.parse(data);
+					}catch(e) {
+						throw new Error("Input error: "+data);
+					}
 					that.demessage(data["actions"], _form[0]);
 					if ("receive" in devents)
 						devents["receive"]({
@@ -136,6 +200,14 @@ Websform = {
 					Websform.currentForm = false;
 				}
 			});
+		}else{
+			console.log(_form);
+			var top = $(_form).find("#error").offset().top;
+			if ($(_form).find("#error").parent().children("[isinput]").length > 0)
+				top = $(_form).find("#error").parent().children("[isinput]").offset().top;
+			$('html, body').animate({
+				scrollTop: top
+			}, 200);
 		}
 	},
 	
