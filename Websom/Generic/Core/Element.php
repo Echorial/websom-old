@@ -79,10 +79,18 @@ class Element {
 	* Use this to set an attribute on the element to a `value`.
 	*/
 	public function attr($name, $value = null) {
+		if (gettype($name) != "string") {
+			throw new Exception("Attribute key must be of type string.");
+		}
+		
 		if ($value === null) {
 			if (!isset($this->identity['attr'][$name])) return null;
 			return $this->identity['attr'][$name];
 		}else {
+			if (gettype($value) != "string" AND gettype($value) != "integer" AND gettype($value) != "double") {
+				throw new Exception("Attribute key must be of type string.");
+			}
+			
 			$this->identity['attr'][$name] = $value;
 		}
 	}

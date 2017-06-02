@@ -1921,6 +1921,7 @@ class Control_Structure extends Hookable {
 	* 	- char type: The type of operation the Control_Structure will do to the data base. Accepted values: "c", "e", "s", "p". More detail below.
 	* 	- string table: The table name that the Control_Structure will use. Accepted value type: string
 	*  - bool noMessages: If set to false this will not set default messages.
+	*  - string clientName: The name to use on the client. See Form::clientName.
 	*
 	* Types:
 	* 	- c: This type will create a new row with the provided column and control pairs. <br>
@@ -1983,7 +1984,7 @@ class Control_Structure extends Hookable {
 			}, 5000);
 		");
 		
-		$this->client("inputError", "$(event.\$error).fadeOut(100);$(event.\$error).addClass('input_error');$(event.\$error).fadeIn(100);");
+		$this->client("inputError", "$(event.\$error).fadeOut(100);$(event.\$error).attr('id', 'error').addClass('input_error').css('color', 'red');$(event.\$error).fadeIn(100);");
 		
 		if (!isset($options["noMessages"]))
 			$options["noMessages"] = false;
@@ -2079,6 +2080,9 @@ class Control_Structure extends Hookable {
 		
 		//Create edit and create form
 		$f = new Form("Object_Form_".$this->index);
+		
+		if (isset($this->options["clientName"]))
+			$f->clientName = $this->options["clientName"];
 		
 		$f->clientEvents = $this->clientEvents;
 		
@@ -2474,6 +2478,9 @@ class Control_Structure extends Hookable {
 		}
 		
 		$f = new Form("Object_Form_".$this->index);
+		
+		if (isset($this->options["clientName"]))
+			$f->clientName = $this->options["clientName"];
 		
 		$f->clientEvents = $this->clientEvents;
 		

@@ -48,6 +48,8 @@ class Radio extends Input {
 	
 	public $default_key = "";
 	
+	public $name = "Radio";
+	
 	function __construct($op) {
 		$this->options = $op;
 	}
@@ -58,7 +60,7 @@ class Radio extends Input {
 		$opts = ["default" => $this->default_key];
 		if ($opts["default"] == "") unset($opts["default"]);
 		
-		$e = Theme::input_radio($ops, $this->label, $opts);
+		$e = Theme::input_radio($ops, $this->name, $this->label, $opts);
 		
 		$e->attr("id", $this->id);
 		$e->attr("isinput", "");
