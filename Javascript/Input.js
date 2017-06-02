@@ -190,6 +190,11 @@ Websform = {
 						throw new Error("Input error: "+data);
 					}
 					that.demessage(data["actions"], _form[0]);
+					if ("msg" in data) {
+						for (var i in data.msg) {
+							$("#"+i).after("<div class='red-text input_error'>"+data.msg[i]+"</div>");
+						}
+					}
 					if ("receive" in devents)
 						devents["receive"]({
 							$form: $(_form),
@@ -201,7 +206,6 @@ Websform = {
 				}
 			});
 		}else{
-			console.log(_form);
 			var top = $(_form).find("#error").offset().top;
 			if ($(_form).find("#error").parent().children("[isinput]").length > 0)
 				top = $(_form).find("#error").parent().children("[isinput]").offset().top;
