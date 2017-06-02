@@ -420,6 +420,7 @@ interface iTheme {
 	*
 	* Options:
 	* 	- class(string): The class wrapping the slider.
+	* 	- indicators(bool default true): If the slide indicators should show.
 	* 	- slideClass(string): The class wrapping each slide.
 	* 	- center(bool): If the slide content should be try to be at the center.
 	*/

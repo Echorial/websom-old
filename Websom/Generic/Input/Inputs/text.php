@@ -206,8 +206,6 @@ class Text extends Input {
 		$e->attr("onlydesc", $this->only[1]);
 		$e->attr("isinput", "");
 		
-		
-		
 		//$html = '<input isinput id="'.$this->id.'" blank="'.($this->blank ? 1:0).'" count="'.$this->min.' '.$this->max.'" not="'.$this->not.'" only="'.$this->only.'" name="'.$meta['name'].'" type="text" placeholder="Text"></input>';
 		
 		$this->doVisible($e);
@@ -274,6 +272,15 @@ class Text extends Input {
 			preg_match('~'.$this->not[0].'~', $data, $match2);
 			if (count($match2) > 0)
 				return 'This contains an invalid character. '.implode(', ', $match2);
+		}
+		
+		if ($this->displayType == "url") {
+			if ($this->blank == true AND $data == "")
+				return true;
+			
+			if (filter_var($data, FILTER_VALIDATE_URL) === false) {
+				return "Not a valid url.";
+			}
 		}
 		
 		return true;
