@@ -185,7 +185,7 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 		array_push($this->values, $cv2);
 	}
 	
-	private $order = false;
+	private $order = [];
 	
 	/**
 	* How to order the results.
@@ -195,7 +195,7 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 	*/
 	public function order($column, $o) {
 		array_push($this->_orderHistory, array($column, $o));
-		$this->order = [$column, $o];
+		$this->order[] = "`".$column."` ".$o;
 		//$this->query .= ' ORDER BY `'.$column.'` '.$o.' ';
 	}
 	
@@ -242,8 +242,8 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 		foreach ($this->values as $key => $value) {
 			$this->values[$key] = &$this->values[$key];
 		}
-		if ($this->order !== false)
-			$this->query .= " ORDER BY `".$this->order[0]."` ".$this->order[1]." ";
+		if (count($this->order) != 0)
+			$this->query .= " ORDER BY ".implode(", ", $this->order);
 		
 		if ($this->limit !== false)
 			if ($this->limit[1] !== false) {
@@ -1461,6 +1461,41 @@ class Search extends Control {
 	}
 }
 
+class SortOrder extends Control {
+	public $up;
+	public $down;
+	public $display;
+	public $sep = '';
+	
+	function __construct($display, $displayUp, $displayDown, $sep = '') {
+		$this->sep = $sep;
+		$this->up = $displayUp;
+		$this->down = $displayDown;
+		$this->display = $display;
+	}
+	
+	function get(){
+		$inp = new Select([
+			$this->up => "1",
+			$this->down => "2"
+		]);
+		
+		$inp->placeholder = $this->display;
+		
+		$inp->allowDefault = true;
+		
+		return $inp;
+	}
+	
+	function filter($val, &$finder, $name) {
+		$ord = "DESC";
+		if ($val === "2")
+			$ord = "ASC";
+		
+		$finder->order($name, $ord);
+	}
+}
+
 class TimeOrder extends Control {
 	function __construct($sep = '') {
 		$this->sep = $sep;
@@ -2099,7 +2134,7 @@ class Control_Structure extends Hookable {
 		foreach ($this->controls as $c) {
 			$f->addInput($c['n']."_con", $c['c']->get());
 			if ($c['c']->_action_edit)
-				array_push($editLoads, $c['n']);
+				array_push($editLoads, "`".$c['n']."`");
 			
 			if ($sendStructure !== false) {
 				$sendStructure->html = str_replace('%'.$c['n'].'%', '%'.$c['n'].'_con%', $sendStructure->html);
@@ -2225,9 +2260,15 @@ class Control_Structure extends Hookable {
 	
 	public function get_edit($data, $form) {
 		$rtn = true;
+		$found = [];
+		$f = false;
 		
-		$f = Quick_Find([["id", "=", $this->options["id"]]]);
-		$found = Data_Select($this->table, $f);
+		if (gettype($this->options["id"]) == "array") {
+			$found = $this->options["id"];
+		}else{
+			$f = Quick_Find([["id", "=", $this->options["id"]]]);
+			$found = Data_Select($this->table, $f);
+		}
 		
 		$noAction = [];
 		$b = new Data_Builder();
@@ -2255,6 +2296,11 @@ class Control_Structure extends Hookable {
 		}
 		$arrify = $b->arrayify();
 		$this->event("builder", [$b, $arrify, $found[0]]);
+		
+		if ($f === false) {
+			$f = new Data_Finder();
+			$this->event("finder", [$f, $arrify], false);
+		}
 		
 		if ($rtn === true AND $this->event("edit", [$arrify, $found[0]]) == false) {
 			if (count($arrify) > 0)

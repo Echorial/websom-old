@@ -206,12 +206,14 @@ Websform = {
 				}
 			});
 		}else{
-			var top = $(_form).find("#error").offset().top;
-			if ($(_form).find("#error").parent().children("[isinput]").length > 0)
-				top = $(_form).find("#error").parent().children("[isinput]").offset().top;
-			$('html, body').animate({
-				scrollTop: top
-			}, 200);
+			try {
+				var top = $(_form).find("#error").offset().top;
+				if ($(_form).find("#error").parent().children("[isinput]").length > 0)
+					top = $(_form).find("#error").parent().children("[isinput]").offset().top;
+				$('html, body').animate({
+					scrollTop: top
+				}, 200);
+			} catch(e) {}
 		}
 	},
 	
