@@ -6,6 +6,22 @@ $(document).ready(function() {
 			var serverResponseCallback = function () {};
 			responsives[rep](
 				function (msg, inlineCback = false){
+					if (typeof msg != "object")
+						throw new Error("Unable to serialize responsive response.");
+					
+					function recur (base) {
+						for (var i in base) {
+							if (typeof base[i] == "object")
+								if (Array.isArray(base[i])) {
+									if (base[i].length == 0)
+										base[i] = {__websom_array: true}; //Empty arrays do not post
+								}else
+									recur(base[i]);
+						}
+					}
+					
+					recur(msg);
+					
 					msg['responiveid'] = id;
 					$.ajax({
 						type: "POST",
@@ -247,7 +263,6 @@ function decodeQ(object) {
 	}
 	return object;
 }
-//Insert actions here NOTE: this will change into a more organized file in the future without disrupting the code\\
 
 function Action_Append (_form, data) {
 	if (typeof data['html'] == 'undefined') return false;

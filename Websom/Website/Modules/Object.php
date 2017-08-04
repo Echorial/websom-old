@@ -185,7 +185,7 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 		array_push($this->values, $cv2);
 	}
 	
-	private $order = false;
+	private $order = [];
 	
 	/**
 	* How to order the results.
@@ -195,7 +195,7 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 	*/
 	public function order($column, $o) {
 		array_push($this->_orderHistory, array($column, $o));
-		$this->order = [$column, $o];
+		$this->order[] = "`".$column."` ".$o;
 		//$this->query .= ' ORDER BY `'.$column.'` '.$o.' ';
 	}
 	
@@ -242,8 +242,8 @@ class Data_Finder {	//TODO: Make the history and query generate at getPrepared r
 		foreach ($this->values as $key => $value) {
 			$this->values[$key] = &$this->values[$key];
 		}
-		if ($this->order !== false)
-			$this->query .= " ORDER BY `".$this->order[0]."` ".$this->order[1]." ";
+		if (count($this->order) != 0)
+			$this->query .= " ORDER BY ".implode(", ", $this->order);
 		
 		if ($this->limit !== false)
 			if ($this->limit[1] !== false) {
@@ -1461,6 +1461,41 @@ class Search extends Control {
 	}
 }
 
+class SortOrder extends Control {
+	public $up;
+	public $down;
+	public $display;
+	public $sep = '';
+	
+	function __construct($display, $displayUp, $displayDown, $sep = '') {
+		$this->sep = $sep;
+		$this->up = $displayUp;
+		$this->down = $displayDown;
+		$this->display = $display;
+	}
+	
+	function get(){
+		$inp = new Select([
+			$this->up => "1",
+			$this->down => "2"
+		]);
+		
+		$inp->placeholder = $this->display;
+		
+		$inp->allowDefault = true;
+		
+		return $inp;
+	}
+	
+	function filter($val, &$finder, $name) {
+		$ord = "DESC";
+		if ($val === "2")
+			$ord = "ASC";
+		
+		$finder->order($name, $ord);
+	}
+}
+
 class TimeOrder extends Control {
 	function __construct($sep = '') {
 		$this->sep = $sep;
@@ -1921,6 +1956,7 @@ class Control_Structure extends Hookable {
 	* 	- char type: The type of operation the Control_Structure will do to the data base. Accepted values: "c", "e", "s", "p". More detail below.
 	* 	- string table: The table name that the Control_Structure will use. Accepted value type: string
 	*  - bool noMessages: If set to false this will not set default messages.
+	*  - string clientName: The name to use on the client. See Form::clientName.
 	*
 	* Types:
 	* 	- c: This type will create a new row with the provided column and control pairs. <br>
@@ -1935,22 +1971,26 @@ class Control_Structure extends Hookable {
 	* 			- integer "id": Id of the row to edit.
 	* 		Events:
 	* 			- "edit"($data, $oldData): When the client edits a row. Params: data(the new data), Return false to cancel the edit.
+	* 			- "builder"($builder, $data, $oldData): Modify the builder before the edit event is called.
 	* 	- s: This will create a sortable html element with the column/control pairs soring the view.
-	* 		Options:
-	* 			- Structure "areaStructure": A Structure object that goes around the control area and view area. Variables %sort%, %view%
-	* 			- boolean "viewOnStart": If view area should show results at the start.
-	*  		- View "view"(Required): The view object that will be used to display the sorted rows. Note: Only the sub() method is used on the view.
-	*  		- array "edits": Set this to an array ["column name", some control instance] to add editing to each sub view.
-	*  		- Structure "editStructure": The structure that will be used if "edits" is set.
-	*  		- boolean "canDelete": If the user can delete the row. Note: Only works when editing is enabled. Note: Make sure to insert %cs_delete% into the edit structure if you want the button to show.
-	*  		- string "deleteText": The delete button text.
-	*  		- string "nothingMessage": The message to display when no rows are found.
-	*  		- integer "limit"(default 25): The max number of rows per page or load.
-	* 		Events:
-	* 			- "sortData"($data): This is called before the viewer creates a finder to find the data. Return the modified $data object.
-	* 			- "sortFinder"(&$finder): This is called with a reference to a finder. You can add or modify the finder.
-	* 			- "edit"($data, $oldData): When the client edits a row. Params: data(the new data), oldData(The current data of the row). Can cancel.
-	* 			- "delete"($rowData): When the client deletes a row. Can cancel.
+	* Options:
+	* 	- Structure "areaStructure": A Structure object that goes around the control area and view area. Variables %sort%, %view%
+	* 	- boolean "viewOnStart": If view area should show results at the start.
+	* 	- View "view"(Required): The view object that will be used to display the sorted rows. Note: Only the sub() method is used on the view.
+	* 	- array "edits": Set this to an array ["column name", some control instance] to add editing to each sub view.
+	* 	- Structure "editStructure": The structure that will be used if "edits" is set.
+	* 	- boolean "canDelete": If the user can delete the row. Note: Only works when editing is enabled. Note: Make sure to insert %cs_delete% into the edit structure if you want the button to show.
+	* 	- string "deleteText": The delete button text.
+	* 	- string "nothingMessage": The message to display when no rows are found.
+	* 	- integer "limit"(default 25): The max number of rows per page or load.
+	* 	- string "wrapWith"(default): Override this to set the .Object_Sort_View container. Note the element must have the class Object_Sort_View.
+	* 	- string "wrapForm"(default false): If true this will wrap the form arround the entire contents.
+	* 
+	* Events:
+	* 	- "sortData"($data): This is called before the viewer creates a finder to find the data. Return the modified $data object.
+	* 	- "sortFinder"(&$finder): This is called with a reference to a finder. You can add or modify the finder.
+	* 	- "edit"($data, $oldData): When the client edits a row. Params: data(the new data), oldData(The current data of the row). Can cancel.
+	* 	- "delete"($rowData): When the client deletes a row. Can cancel.
 	*
 	*/
 	public function __construct($options) {
@@ -1979,7 +2019,7 @@ class Control_Structure extends Hookable {
 			}, 5000);
 		");
 		
-		$this->client("inputError", "$(event.\$error).fadeOut(100);$(event.\$error).addClass('input_error');$(event.\$error).fadeIn(100);");
+		$this->client("inputError", "$(event.\$error).fadeOut(100);$(event.\$error).attr('id', 'error').addClass('input_error').css('color', 'red');$(event.\$error).fadeIn(100);");
 		
 		if (!isset($options["noMessages"]))
 			$options["noMessages"] = false;
@@ -2011,7 +2051,7 @@ class Control_Structure extends Hookable {
 			$e = Theme::container("", "Form.success");
 			$e->insert("Success");
 			Theme::tell($e, 1, "Form.success");
-			$m->add("form", Message::Success($e->get()));
+			//$m->add("form", Message::Success($e->get()));
 			return $m;
 		});
 	
@@ -2076,6 +2116,9 @@ class Control_Structure extends Hookable {
 		//Create edit and create form
 		$f = new Form("Object_Form_".$this->index);
 		
+		if (isset($this->options["clientName"]))
+			$f->clientName = $this->options["clientName"];
+		
 		$f->clientEvents = $this->clientEvents;
 		
 		//Setup events
@@ -2091,7 +2134,7 @@ class Control_Structure extends Hookable {
 		foreach ($this->controls as $c) {
 			$f->addInput($c['n']."_con", $c['c']->get());
 			if ($c['c']->_action_edit)
-				array_push($editLoads, $c['n']);
+				array_push($editLoads, "`".$c['n']."`");
 			
 			if ($sendStructure !== false) {
 				$sendStructure->html = str_replace('%'.$c['n'].'%', '%'.$c['n'].'_con%', $sendStructure->html);
@@ -2217,9 +2260,15 @@ class Control_Structure extends Hookable {
 	
 	public function get_edit($data, $form) {
 		$rtn = true;
+		$found = [];
+		$f = false;
 		
-		$f = Quick_Find([["id", "=", $this->options["id"]]]);
-		$found = Data_Select($this->table, $f);
+		if (gettype($this->options["id"]) == "array") {
+			$found = $this->options["id"];
+		}else{
+			$f = Quick_Find([["id", "=", $this->options["id"]]]);
+			$found = Data_Select($this->table, $f);
+		}
 		
 		$noAction = [];
 		$b = new Data_Builder();
@@ -2246,6 +2295,13 @@ class Control_Structure extends Hookable {
 				}
 		}
 		$arrify = $b->arrayify();
+		$this->event("builder", [$b, $arrify, $found[0]]);
+		
+		if ($f === false) {
+			$f = new Data_Finder();
+			$this->event("finder", [$f, $arrify], false);
+		}
+		
 		if ($rtn === true AND $this->event("edit", [$arrify, $found[0]]) == false) {
 			if (count($arrify) > 0)
 				Data_Update($this->table, $b, $f);
@@ -2469,6 +2525,9 @@ class Control_Structure extends Hookable {
 		
 		$f = new Form("Object_Form_".$this->index);
 		
+		if (isset($this->options["clientName"]))
+			$f->clientName = $this->options["clientName"];
+		
 		$f->clientEvents = $this->clientEvents;
 		
 		$f->on("success", function ($data) {
@@ -2526,24 +2585,105 @@ class Control_Structure extends Hookable {
 		
 		
 		
-		$html = $areaStructure->get([
-			"sort" => $f->get(),
-			"view" => "<div class='Object_Sort_View'></div>"
-		]);
-		
-		return "<div class='Object_Sort_Wrap'>".$html."</div>";
+		if (isset($this->options["wrapForm"])) {
+			$html = $areaStructure->get([
+				"sort" => $f->getInputs(),
+				"view" => (isset($this->options["wrapWith"])) ? $this->options["wrapWith"] : "<div class='Object_Sort_View'></div>"
+			]);
+			
+			return "<div class='Object_Sort_Wrap'>".$f->wrap($html)."</div>";
+		}else {
+			$html = $areaStructure->get([
+				"sort" => $f->get(),
+				"view" => (isset($this->options["wrapWith"])) ? $this->options["wrapWith"] : "<div class='Object_Sort_View'></div>"
+			]);
+			
+			return "<div class='Object_Sort_Wrap'>".$html."</div>";
+		}
 	}
 	///\endcond
 }
 
-
-
-
-
-
-
-
-
+/**
+* \ingroup BuiltInInputs
+* 
+* The `SortSelector` input is an input that contains a sorted Control_Structure, each item can be selected by simply including a check box with the class SortSelector and an attribute data-sort-selector-value in the sortStructure.
+* 
+* Value: An array of values from the data-sort-selector-value attributes attached to the checkboxes.
+* 
+* \note Loading is not yet implemented.
+* 
+* Options:
+* 	- SortSelector->max_selects: The max number of selections allowed.
+* 	- SortSelector->validate($value): Override with function that returns true if value is valid or string with error msg if not.
+* 
+* Example comming soon.
+*/
+class SortSelector extends Input {
+	public $globalName = "SortSelector";
+	public $label = "SortSelector";
+	public $cs;
+	
+	public $max_selects = 10;
+	public $validate;
+	
+	function __construct(Control_Structure $cs) {
+		$this->cs = $cs;
+	}
+	
+	function buildElement() {
+		$e = new Element("div", ["class" => "SortSelector-Container"]);
+		
+		$e->append($this->cs->get());
+		
+		$e->attr("id", $this->id);
+		$e->attr("isinput", "");
+		
+		$this->doVisible($e);
+		
+		return $e;
+	}
+	
+	function get() {
+		return $this->buildElement()->get();
+	}
+	
+	function send() {
+		return 'var rtn = [];
+		$(element).find(".SortSelector").each(function () {
+			if (Websom.Theme.get($(this)))
+				rtn.push($(this).attr("data-sort-selector-value"))
+		});
+		return rtn;';
+	}
+	
+	function validate_client() {
+		return 'return true;';
+	}
+	
+	function validate_server($data) {
+		foreach ($data as $i) {
+			if (is_callable($this->validate)) {
+				$value = $this->validate($i);
+				if ($value !== true)
+					return $value;
+			}
+		}
+		return true;
+	}
+	
+	function error() {
+		return "return $('<div>'+error+'</div>').insertAfter(element);";
+	}
+	
+	function receive($data) {
+		return $data;
+	}
+	
+	function load() {
+		return '';
+	}
+}
 
 
 ?>

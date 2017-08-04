@@ -224,7 +224,8 @@ class Console_Lexer {
 				$tt['type'] = gettype($tt['value']);
 				$tt['place'] = ($place + $placeAdd) - strlen($tt['value']);
 				
-				if ($tt['value'][0] == '-') $tt['type'] = 'flag';
+				if ($tt["value"] !== "")
+					if ($tt['value'][0] == '-') $tt['type'] = 'flag';
 				
 				array_push($splitup, $tt);
 				

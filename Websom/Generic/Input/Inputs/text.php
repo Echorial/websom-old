@@ -206,8 +206,6 @@ class Text extends Input {
 		$e->attr("onlydesc", $this->only[1]);
 		$e->attr("isinput", "");
 		
-		
-		
 		//$html = '<input isinput id="'.$this->id.'" blank="'.($this->blank ? 1:0).'" count="'.$this->min.' '.$this->max.'" not="'.$this->not.'" only="'.$this->only.'" name="'.$meta['name'].'" type="text" placeholder="Text"></input>';
 		
 		$this->doVisible($e);
@@ -276,6 +274,15 @@ class Text extends Input {
 				return 'This contains an invalid character. '.implode(', ', $match2);
 		}
 		
+		if ($this->displayType == "url") {
+			if ($this->blank == true AND $data == "")
+				return true;
+			
+			if (filter_var($data, FILTER_VALIDATE_URL) === false) {
+				return "Not a valid url.";
+			}
+		}
+		
 		return true;
 	}
 	
@@ -286,6 +293,8 @@ class Text extends Input {
 	}
 	
 	function receive($data) {
+		if ($this->displayType == "number")
+			return floatval($data);
 		return $data;
 	}
 	

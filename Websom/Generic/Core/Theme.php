@@ -94,6 +94,11 @@ class Theme {
 		if (self::$theme !== false)
 		return self::$theme->button($text, self::mergeRules(self::getRule('button', $label), $options));
 	}
+	
+	static public function dropdown($text, $list, $label, $options = []) {
+		if (self::$theme !== false)
+		return self::$theme->dropdown($text, $list, self::mergeRules(self::getRule('dropdown', $label), $options));
+	}
 
 	static public function grid($_2dArray, $label, $options = []){
 		if (self::$theme !== false)
@@ -262,6 +267,11 @@ class Theme {
 		return self::$theme->reveal($start, $show, self::mergeRules(self::getRule('reveal', $label), $options));
 	}
 	
+	static public function reveal_card($title, $actions, $image, $content, $label, $options = []){
+		if (self::$theme !== false)
+		return self::$theme->reveal_card($title, $actions, $image, $content, self::mergeRules(self::getRule('reveal_card', $label), $options));
+	}
+	
 }
 
 Theme::run();
@@ -312,6 +322,12 @@ interface iTheme {
 	*	- link(string): If set the button will be a link.
 	*/
 	public function button($text, $options);
+	
+
+	/**
+	* @param key/value pair $list The a list of display name(key) and link(value).
+	*/
+	public function dropdown($text, $list, $options);
 	
 	/**
 	* Return an `Element` with a grid.
@@ -364,6 +380,20 @@ interface iTheme {
 	public function image($url, $options);
 	
 	/**
+	* Reveal Card.
+	*
+	* Options:
+	* 	- class(string): The class to be attached to the card.
+	* 	- size(int): The size from 1-3
+	* 	- title(string): The title.
+	* 	- actions(string): The action bar.
+	* 	- image(string): The image url for the card.
+	* 	- content(string): The reveal content.
+	* 	- revealTitle(string): The revealed title.
+	*/
+	public function reveal_card($title, $actions, $image, $content, $options);
+	
+	/**
 	* Apply a tooltip to the `element`.
 	*
 	* Options:
@@ -390,6 +420,7 @@ interface iTheme {
 	*
 	* Options:
 	* 	- class(string): The class wrapping the slider.
+	* 	- indicators(bool default true): If the slide indicators should show.
 	* 	- slideClass(string): The class wrapping each slide.
 	* 	- center(bool): If the slide content should be try to be at the center.
 	*/

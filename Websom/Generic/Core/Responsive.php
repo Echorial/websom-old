@@ -61,6 +61,19 @@ function Responsive_Once($responsive) {
 		Get_Responsive($responsive);
 }
 
+function Responive_Recur($base) {
+	foreach ($base as $k => $v) {
+		if (!is_array($v))
+			continue;
+		if (isset($v["__websom_array"])) {
+			$base[$k] = [];
+		}else{
+			$base[$k] = Responive_Recur($base[$k]);
+		}
+	}
+	return $base;
+}
+
 /// \cond
 function Websom_Check_Responsive () {
 	global $Responives;
@@ -70,7 +83,10 @@ function Websom_Check_Responsive () {
 	if (!isset($Responives[$_POST['responiveid']])) return false;
 	$__POST = $_POST;
 	unset($__POST['responiveid']);
-	$responseData = $Responives[$_POST['responiveid']]->response(json_decode(json_encode($__POST), true));
+	$bakedData = json_decode(json_encode($__POST), true);
+	$bakedData = Responive_Recur($bakedData);
+	
+	$responseData = $Responives[$_POST['responiveid']]->response($bakedData);
 	$data = ['responsive_321_type' => false];
 	if (is_array($responseData)) {
 		$data = $responseData;

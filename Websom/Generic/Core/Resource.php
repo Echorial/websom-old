@@ -99,7 +99,7 @@ class Resources {
 	* \param string $register The code or module that registered the file(s).
 	* \param string $recursive If sub directories should be included as well.
 	*/
-	public static function Register_All($path, $register = 'Resources', $recursive = true, $basePath = false) {
+	public static function Register_All($path, $register = 'Resources', $recursive = true, $basePath = false, $directoryNames = false) {
 		if (substr($path, -1) != '/') $path .= '/';
 		$ignore = [];
 		if (isset(self::$pathignore[$path])) $ignore = self::$pathignore[$path];
@@ -112,6 +112,7 @@ class Resources {
 			if (!$file->isDot()) {
 				if ($file->getFilename() == "resourceignore.json" OR $file->getFilename() == "resourceindex.json")
 					continue;
+				
 				$cpath;
 				$recurPath;
 				if ($basePath === false) {
@@ -123,11 +124,15 @@ class Resources {
 				}
 				
 				if (self::check($file->getFilename(), $ignore) == false) continue;
-				if ($file->isDir()) {
+				if ($file->isDir() AND !$directoryNames) {
 					if (!$recursive) continue;
 					self::Register_All($cpath, $register, true);
 				}else{
-					$ext = pathinfo($cpath)['extension'];
+					$ext;
+					if ($directoryNames)
+						$ext = "php"; //Hack
+					else
+						$ext = pathinfo($cpath)['extension'];
 					$type = 'file';
 					if ($ext == 'css')
 						$type = 'stylesheet';

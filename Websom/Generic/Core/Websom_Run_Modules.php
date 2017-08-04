@@ -49,7 +49,7 @@ if (file_exists(Websom_root."/Website/Modules/Object.php")){
 	Error('Module', 'Cannot find object module in '.Websom_root.'/Modules.', true);
 }
 
-Resources::Register_All(Websom_root."/Website/Modules", "Module_Loader", false);
+Resources::Register_All(Websom_root."/Website/Modules", "Module_Loader", false, false, true);
 
 Resources::getModules(function ($resource) {
 	if ($resource["path"] == "Object.php") return;
@@ -168,10 +168,18 @@ function Load_Configs($ModuleName){
 		if ($ModuleName == "Console") {
 			include(Websom_root."/Website/Modules/".$ModuleName.'.php');
 		}else{
-			if (defined("Suppress_Modules") AND Suppress_Modules === true) {
-				@include(Websom_root."/Website/Modules/".$ModuleName.'.php') or die($php_errormsg);
+			$mPath = Websom_root."/Website/Modules/".$ModuleName;
+			define($ModuleName."_Dir", $mPath);
+			if (is_dir($mPath)) {
+				$mPath .="/module.php";
 			}else{
-				include(Websom_root."/Website/Modules/".$ModuleName.'.php');
+				$mPath .= ".php";
+			}
+			
+			if (defined("Suppress_Modules") AND Suppress_Modules === true) {
+				@include($mPath) or die($php_errormsg);
+			}else{
+				include($mPath);
 			}
 		}
 	}
@@ -300,7 +308,12 @@ function Reload_Modules() {
 			if (pathinfo($mod->getFilename(), PATHINFO_EXTENSION) == "json")
 				continue;
 			
+			$ModuleName = "";
+			
+			//$ModuleName = $mod->getFilename();
+			//else
 			$ModuleName = basename($mod->getFilename(), ".php");
+			
 			//Start loading module\\ 
 			$finder = new Data_Finder();
 			$finder->where('', 'module', '=', $ModuleName);
@@ -318,7 +331,7 @@ function Reload_Modules() {
 				return '|Error| Module '.$ModuleName.' is not cooperating. \n';
 			}
 			if ($tbls === false) {
-				$msgs .= '--- Loaded '.$ModuleName.' \n';
+				$msgs .= ' --- Loaded '.$ModuleName.' \n';
 				continue;
 			}
 			foreach ($tbls as $tableName => $tableColumns){
