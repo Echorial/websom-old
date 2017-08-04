@@ -48,6 +48,9 @@ class Javascript {
 	* \note The script is wrapped within the onEvent function, this means some params can be passed into the callback. The first param is `magic`.
 	*/
 	static public function On($event, $script) {
+		if (!isset(Javascript::$globalPageEventHooks[$event]))
+			Javascript::$globalPageEventHooks[$event] = [];
+		
 		array_push(Javascript::$globalPageEventHooks[$event], $script);
 	}
 	

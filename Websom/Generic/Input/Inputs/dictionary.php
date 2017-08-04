@@ -41,6 +41,8 @@ class Dictionary extends Input {
 	public $placeholder = "";
 	public $extraPlaceholder = "";
 	
+	public $single = false;
+	
 	/**
 	* @param string $source The javascript object in relation to window. See Theme::input_dictionary() for more info.
 	* @param string $subSource If set, this will search in the window[$source][$subSource] object for keys.
@@ -109,6 +111,9 @@ class Dictionary extends Input {
 	}
 	
 	public function validate_server($data) {
+		if ($this->single == true)
+			return true;
+		
 		if (!is_array($data))
 			return "Invalid input.";
 		
@@ -126,6 +131,12 @@ class Dictionary extends Input {
 	}
 	
 	public function receive($data) {
+		if ($this->single)
+			if (count($data) > 0)
+				return $data[0];
+			else
+				return "";
+		
 		return $data;
 	}
 	

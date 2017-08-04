@@ -988,7 +988,10 @@ class Input_List extends Input {
 		
 		$rtn = '<inputlist isinput id="'.$this->id.'" data-max-items="'.$this->max_items.'" data-min-items="'.$this->min_items.'"><listtemplate class="do-not-theme" style="display: none;">';
 		if ($this->listStructure === false) {
-			$rtn .= (new Structure(Structure::lister($inputs)))->get($inputs);
+			$removeBtn = Theme::button("Remove", "");
+			Theme::Tell($removeBtn, 4, "");
+			$removeBtn->attr("listremove", "");
+			$rtn .= (new Structure(Structure::lister($inputs).$removeBtn->get()))->get($inputs);
 		}else{
 			$rtn .= $this->listStructure->get($inputs);
 		}
