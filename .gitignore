@@ -1,17 +1,27 @@
 Config/
 
-Websom/Website/
+Websom/Website/*
+Websom/Website/Modules/resouceindex.json
+Websom/Website/Page/Default.html
+Websom/Website/Themes/Theme.rules.json
+
 !Websom/Website/Modules/Object.php
 !Websom/Website/Modules/Console.php
 
-Javascript/
+
+Javascript/*
 !Javascript/Tools.js
 !Javascript/Theme.js
 !Javascript/main.js
 !Javascript/Input.js
 !Javascript/Form.js
 
-Css/
+Css/*
 !Css/console.css
 !Css/websom.css
 !Css/resourceignore.json
+
+*
+!.gitignore
+!p.php
+!console.php

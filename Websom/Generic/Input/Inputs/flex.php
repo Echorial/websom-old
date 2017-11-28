@@ -26,8 +26,8 @@ class Input_Flex extends Input {
 	/**
 	* Add a dynamic route.
 	*/
-	function addRoute($refName, $check, $input, $default = false) {
-		array_push($this->inputs, ["n" => $refName,  "c" => $check, "i" => $input, "d" => $default]);
+	function addRoute($refName, $check, $input, $key, $default = false) {
+		array_push($this->inputs, ["n" => $refName,  "c" => $check, "i" => $input, "k" => $key, "d" => $default]);
 	}
 	
 	function send() {
@@ -98,7 +98,7 @@ return hasError;';
 	}
 	
 	function load() {
-		return '$(element).children("inputroutes").children("inputroute").hide(); var input = $(element).children("inputroutes").children("inputroute[name="+data.type+"]"); Websform.build.callInput({events: false, globalName: input.attr("globalname")}, "load")(input.children("[isinput]")[0], data.value); input.show();';
+		return '$(element).children("inputroutes").children("inputroute").removeClass("flex-input-on").hide(); var input = $(element).children("inputroutes").children("inputroute[name="+data.type+"]"); Websform.build.callInput({events: false, globalName: input.attr("globalname")}, "load")(input.children("[isinput]")[0], data.value[input.attr("data-key")]); input.show(); input.addClass("flex-input-on")';
 	}
 	
 	function init() {
@@ -150,7 +150,7 @@ $(element).closest("websform").on("change", function () {
 			if ($inp["d"] OR ($i == count($this->inputs)-1 AND !$didDefault))
 				$default = "class='flex-input-on'";
 			
-			$rtn .= "<inputroute name='".$inp["n"]."' ".$default." globalname='".$inp['i']->globalName."'>".$d['html']."</inputroute>";
+			$rtn .= "<inputroute data-key='".$inp["k"]."' name='".$inp["n"]."' ".$default." globalname='".$inp['i']->globalName."'>".$d['html']."</inputroute>";
 			$scripts[] = $inp["n"].": {check: function (input, scopeInput) {".$inp["c"]."}}";
 		}
 		

@@ -5,7 +5,7 @@ $(document).ready(function() {
 		function(id){
 			var serverResponseCallback = function () {};
 			responsives[rep](
-				function (msg, inlineCback = false){
+				function (msg, inlineCback) {
 					if (typeof msg != "object")
 						throw new Error("Unable to serialize responsive response.");
 					
@@ -51,7 +51,7 @@ $(document).ready(function() {
 		function(id){
 			var serverResponseCallback = function () {};
 			responsives[rep](
-				function (msg, inlineCback = false){
+				function (msg, inlineCback){
 					msg['responiveid'] = rep;
 					$.ajax({
 						type: "POST",

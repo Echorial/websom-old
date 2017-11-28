@@ -87,7 +87,7 @@ class Element {
 			if (!isset($this->identity['attr'][$name])) return null;
 			return $this->identity['attr'][$name];
 		}else {
-			if (gettype($value) != "string" AND gettype($value) != "integer" AND gettype($value) != "double") {
+			if (gettype($value) != "string" AND gettype($value) != "integer" AND gettype($value) != "double" AND gettype($value) != "boolean") {
 				throw new Exception("Attribute key must be of type string.");
 			}
 			
