@@ -1000,6 +1000,7 @@ class Input_List extends Input {
 		
 		$addTo = Theme::button("Add", "list");
 		$addTo->attr("listadd", "");
+		
 		$struct = [
 			'list' => '<listarea data-list-parent="'.$this->id.'"></listarea>',
 			'add' => $addTo->get()

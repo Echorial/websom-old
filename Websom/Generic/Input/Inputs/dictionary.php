@@ -66,8 +66,8 @@ class Dictionary extends Input {
 		
 		$e = Theme::input_dictionary($params, $this->label);
 		
-		$e->attr("data-source", $this->source);
-		$e->attr("data-sub-source", $this->subSource);
+		$e->attr("data-source", (string) $this->source);
+		$e->attr("data-sub-source",  (string) $this->subSource);
 		
 		if ($this->database !== false)
 			$this->allowUserKeys = true;

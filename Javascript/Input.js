@@ -30,7 +30,8 @@ WebsomForm.Input.prototype.getElement = function () {
 
 window.Websom.Input = {};
 window.Websom.Forms = {};
-window.Websom.Input.buildForms = function (lookin = $("body")) {
+window.Websom.Input.buildForms = function (lookin) {
+	lookin = lookin || $("body")
 	lookin.find("websform:not([data-loaded])").each(function () {
 		var f = $(this);
 		f.attr("data-loaded", "true");
